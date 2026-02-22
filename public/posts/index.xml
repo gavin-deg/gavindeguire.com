@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Posts on Gavin DeGuire</title>
+    <link>http://localhost:1313/posts/</link>
+    <description>Recent content in Posts on Gavin DeGuire</description>
+    <generator>Hugo -- 0.156.0</generator>
+    <language>en-us</language>
+    <lastBuildDate>Thu, 30 Oct 2025 00:00:00 +0000</lastBuildDate>
+    <atom:link href="http://localhost:1313/posts/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Physics 453: HW 9</title>
+      <link>http://localhost:1313/posts/hw9_gavin-deguire/</link>
+      <pubDate>Thu, 30 Oct 2025 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/posts/hw9_gavin-deguire/</guid>
+      <description>&lt;div align=&#34;center&#34;&gt;
+&lt;h2&gt;Gavin DeGuire&lt;/h2&gt;
+&lt;h3&gt;Due: 10/30&lt;/h3&gt;
+&lt;/div&gt;
+&lt;p&gt;Chapter 4: 29, 33, 35, 37, 38, 40, 61&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;![](/Screenshot 2025-10-29 at 10.15.30 PM.png)&lt;/p&gt;
+&lt;p&gt;As given in eqn. 4.17, the radial equation reads:
+$$
+\frac{1}{R} \frac{d}{dr}\left( r^{2} \frac{dR}{dr} \right) - \frac{2mr^{2}}{\hbar^{2}}[V(r)-E] = \ell(\ell+1)
+$$&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;![](/Screenshot 2025-10-29 at 10.16.06 PM.png)&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;![](/Screenshot 2025-10-29 at 10.16.22 PM.png)&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;![](/Screenshot 2025-10-29 at 10.17.06 PM.png)&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;![](/Screenshot 2025-10-29 at 10.17.20 PM.png)&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;![](/Screenshot 2025-10-29 at 10.18.35 PM.png)&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;![](/Screenshot 2025-10-29 at 10.18.07 PM.png)&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;![](/Screenshot 2025-10-29 at 10.18.48 PM.png)&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

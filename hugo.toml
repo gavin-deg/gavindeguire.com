@@ -1,0 +1,9 @@
+baseURL = 'https://gavindeguire.com/'
+languageCode = 'en-us'
+title = 'Gavin DeGuire'
+theme = 'PaperMod'
+[params]
+  author = "Gavin DeGuire"
+  math = true
+[markup.goldmark.renderer]
+  unsafe = true
