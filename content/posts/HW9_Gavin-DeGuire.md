@@ -12,7 +12,7 @@ Chapter 4: 29, 33, 35, 37, 38, 40, 61
 
 ---
 
-![](/Screenshot 2025-10-29 at 10.15.30 PM.png)
+![](/Screenshot-2025-10-29-at-10.15.30-PM.png)
 
 As given in eqn. 4.17, the radial equation reads:
 $$
@@ -21,60 +21,60 @@ $$
 
 ---
 
-![](/Screenshot 2025-10-29 at 10.16.06 PM.png)
+![](/Screenshot-2025-10-29-at-10.16.06-PM.png)
 
 ---
 
-![](/Screenshot 2025-10-29 at 10.16.22 PM.png)
+![](/Screenshot-2025-10-29-at-10.16.22-PM.png)
 
 ---
 
-![](/Screenshot 2025-10-29 at 10.17.06 PM.png)
+![](/Screenshot-2025-10-29-at-10.17.06-PM.png)
 
 ---
 
-![](/Screenshot 2025-10-29 at 10.17.20 PM.png)
+![](/Screenshot-2025-10-29-at-10.17.20-PM.png)
 
 ---
 
-![](/Screenshot 2025-10-29 at 10.18.35 PM.png)
+![](/Screenshot-2025-10-29-at-10.18.35-PM.png)
 
 ---
 
-![](/Screenshot 2025-10-29 at 10.18.07 PM.png)
+![](/Screenshot-2025-10-29-at-10.18.07-PM.png)
 
 ---
 
-![](/Screenshot 2025-10-29 at 10.18.48 PM.png)
+![](/Screenshot-2025-10-29-at-10.18.48-PM.png)
 
 ---
 
-![](/Screenshot 2025-10-29 at 10.18.59 PM.png)
+![](/Screenshot-2025-10-29-at-10.18.59-PM.png)
 
 ---
 
-![](/Screenshot 2025-10-29 at 10.19.18 PM.png)
+![](/Screenshot-2025-10-29-at-10.19.18-PM.png)
 
 ---
 
-![](/Screenshot 2025-10-29 at 10.21.53 PM.png)
+![](/Screenshot-2025-10-29-at-10.21.53-PM.png)
 
 ---
 
-![](/Screenshot 2025-10-29 at 10.22.08 PM.png)
+![](/Screenshot-2025-10-29-at-10.22.08-PM.png)
 
 ---
 
-![](/Screenshot 2025-10-29 at 10.22.23 PM.png)
+![](/Screenshot-2025-10-29-at-10.22.23-PM.png)
 
 ---
 
-![](/Screenshot 2025-10-29 at 10.22.36 PM.png)
+![](/Screenshot-2025-10-29-at-10.22.36-PM.png)
 
 ---
 
-![](/Screenshot 2025-10-29 at 10.23.24 PM.png)
+![](/Screenshot-2025-10-29-at-10.23.24-PM.png)
 
 ---
 
-![](/Screenshot 2025-10-29 at 10.24.20 PM.png)
+![](/Screenshot-2025-10-29-at-10.24.20-PM.png)
