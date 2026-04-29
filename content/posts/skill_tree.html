@@ -139,21 +139,14 @@ h3{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;margin-b
 <div class="rm-grid">
 
 <div class="rm-phase">
-  <div class="rm-phase-head"><span class="rm-phase-num">PHASE 0</span><span class="rm-phase-title">Fix the Anchor</span></div>
-  <p class="rm-phase-sub">DS1052E repair is the critical path blocker. Nothing else requires it immediately but it validates everything downstream.</p>
+  <div class="rm-phase-head"><span class="rm-phase-num">PHASE 0</span><span class="rm-phase-title">Anchor — Complete ✓</span></div>
+  <p class="rm-phase-sub">DS1052E repair done. Running continuously on both channels at 50MHz. Staying at 50MHz — no unlock needed for current work.</p>
   <div class="rm-item">
-    <div class="rm-dot now"></div>
+    <div class="rm-dot now" style="background:#2E7D32;box-shadow:0 0 0 2px #a5d6a7"></div>
     <div class="rm-item-body">
-      <div class="rm-item-label">DS1052E USB reflash</div>
-      <div class="rm-item-desc">≤4GB FAT32 drive, firmware v00.04.02.01.00 from la3pna archive. Unlock 100MHz after success.</div>
-      <span class="rm-blocker">Need: small USB drive ≤4GB</span>
-    </div>
-  </div>
-  <div class="rm-item">
-    <div class="rm-dot now"></div>
-    <div class="rm-item-body">
-      <div class="rm-item-label">If reflash fails → open case</div>
-      <div class="rm-item-desc">Visual inspect electrolytics near DC-DC converters for bulge/leak. ESR test if meter available. JTAG via Bus Blaster as last resort.</div>
+      <div class="rm-item-label" style="color:#2E7D32">Rigol DS1052E — working ✓</div>
+      <div class="rm-item-desc">Both channels confirmed stable. 50MHz sufficient for all synth, PSU, and audio-band work. Anchor is live and validating downstream builds.</div>
+      <span class="rm-win">Complete — unblocks all downstream calibration</span>
     </div>
   </div>
 </div>
@@ -198,28 +191,28 @@ h3{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;margin-b
 </div>
 
 <div class="rm-phase">
-  <div class="rm-phase-head"><span class="rm-phase-num">PHASE 3</span><span class="rm-phase-title">WF Gen — Output Stage</span></div>
-  <p class="rm-phase-sub">AD9833 core is working. The output stage is where the physics gives you real handles. Do this before building instruments that need a clean signal source.</p>
+  <div class="rm-phase-head"><span class="rm-phase-num">PHASE 3</span><span class="rm-phase-title">WF Gen — Debug + Output Stage</span></div>
+  <p class="rm-phase-sub">AD9833 + amplitude/offset stages breadboarded and powered. Signal chain fault somewhere after AD9833 output — under active debug. Most likely cause: TL072 single-rail biasing. Fix: add ICL7660 split supply to breadboard first.</p>
+  <div class="rm-item">
+    <div class="rm-dot now"></div>
+    <div class="rm-item-body">
+      <div class="rm-item-label">Debug signal chain fault</div>
+      <div class="rm-item-desc">Probe each stage with Rigol in sequence: AD9833 VOUT → filter output → after pot → final TL072 output. First railed or dead node is the fault. Root cause likely missing 2.5V bias on TL072 non-inverting inputs (single-rail operation).</div>
+      <span class="rm-blocker">Fix: add ICL7660+MT3608 split supply to breadboard — all owned</span>
+    </div>
+  </div>
   <div class="rm-item">
     <div class="rm-dot next"></div>
     <div class="rm-item-body">
       <div class="rm-item-label">Sallen-Key reconstruction filter</div>
-      <div class="rm-item-desc">2nd-order LPF at ~100kHz (TL072 + passives, all in hand). Removes DAC staircase artifacts. THD drops from ~-40dBc to ~-65dBc. Most important single upgrade.</div>
+      <div class="rm-item-desc">2nd-order LPF at ~100kHz (TL072 + passives, all in hand). Removes DAC staircase artifacts. THD: ~−40dBc → ~−65dBc. Most impactful single upgrade.</div>
     </div>
   </div>
   <div class="rm-item">
     <div class="rm-dot next"></div>
     <div class="rm-item-body">
-      <div class="rm-item-label">Variable amplitude + DC offset</div>
-      <div class="rm-item-desc">WH148 pot VGA stage (0–3Vpp), summing amp for ±5V DC offset injection. Requires split supply from Phase 1.</div>
-      <span class="rm-blocker">After: Phase 1 PSU</span>
-    </div>
-  </div>
-  <div class="rm-item">
-    <div class="rm-dot soon"></div>
-    <div class="rm-item-body">
       <div class="rm-item-label">Encoder UI (Pico + ST7789V)</div>
-      <div class="rm-item-desc">KY-040 encoder + ST7789V display (in transit). Coarse/fine frequency. Feels like an instrument. Skip: Uno-based serial control is an unnecessary intermediate.</div>
+      <div class="rm-item-desc">KY-040 encoder (owned) + ST7789V (in transit). Coarse/fine frequency. Waveform toggle. Feels like an instrument.</div>
     </div>
   </div>
 </div>
@@ -393,7 +386,7 @@ var nodes=[
   {id:'s1',cat:'scope',tier:0,label:'Pico audio scope',sub:'Dual-core + ST7789V',cost:'~$10 total',desc:'Pico core 0 samples MCP3202 exclusively, core 1 drives ST7789V. 80–100ksps, 40kHz usable BW, 12-bit resolution. Level trigger with pre-trigger buffer. Full audio band. Replaces/skips serial plotter tier.',techs:['Dual-core task split','TFT_eSPI driver','Pre-trigger buffer','Level trigger'],pre:[],cmp:['DSO138 ~$18 — you match BW, beat on 12-bit vs 8-bit res']},
   {id:'s2',cat:'scope',tier:1,label:'Input protection',sub:'Divider+clamp+AC/DC',cost:'+~$1',desc:'Resistor divider with 2.5V bias for bipolar signals. 1N4148 clamping (in hand). AC/DC coupling switch. Multiple voltage ranges. Safe to probe real circuits.',techs:['Voltage divider design','Clamping diodes','AC coupling','Bipolar input bias'],pre:['s1'],cmp:[]},
   {id:'s3',cat:'scope',tier:2,label:'Buffered front end',sub:'Fast op-amp + BNC',cost:'+~$8',gap:true,gapItems:['OPA2134 or AD8065 op-amp (~$4 Mouser)','BNC jack (~$2 AliExpress)'],desc:'OPA2134 or AD8065 unity-gain input buffer. >1MΩ impedance. Precision attenuator. BNC jack. 8MHz −3dB analog BW. Front end no longer the bottleneck.',techs:['Op-amp input buffer','Impedance matching','BNC termination','Attenuator design'],pre:['s2'],cmp:['Fnirsi DPOX180H ~$55 — comparable BW, inferior res']},
-  {id:'sA',cat:'anchor',tier:2.5,label:'Rigol DS1052E',sub:'Bootstrap anchor — buy once',cost:'~$80 used eBay',anchor:true,desc:'The one justified buy. 50MHz unlockable to 100MHz. Dual channel essential for VCO calibration and filter debug. Kept permanently as calibration reference even after DIY scope surpasses it. CURRENTLY IN REPAIR.',techs:[],pre:[],cmp:['Validates all downstream DIY builds — never deprecated']},
+  {id:'sA',cat:'anchor',tier:2.5,label:'Rigol DS1052E',sub:'Bootstrap anchor — working ✓',cost:'~$80 used eBay',anchor:true,desc:'The one justified buy. 50MHz dual channel. Running continuously on both channels — repair complete. Essential for VCO calibration, filter debug, and validating every downstream DIY build. Kept permanently as calibration reference.',techs:[],pre:[],cmp:['Validates all downstream DIY builds — never deprecated']},
   {id:'s4',cat:'scope',tier:3,label:'PIO parallel ADC',sub:'AD9280 32Msps + PIO',cost:'~$30 total',gap:true,gapItems:['AD9280 8-bit 32Msps ADC (~$5 AliExpress)'],desc:'AD9280 8-bit 32Msps parallel CMOS ADC. Pico PIO reads 8 data lines into DMA ring buffer. LM393 hardware comparator trigger (in hand). 5–15Msps effective, 1–5MHz usable BW.',techs:['PIO state machine','Parallel ADC interface','DMA ring buffer','Hardware comparator trigger'],pre:['s3'],cmp:['DSO138 kit ~$18 (same architecture)','Hantek 6022BE ~$65']},
   {id:'s5',cat:'scope',tier:4,label:'Scope PCB v1',sub:'KiCad 2-layer + GND plane',cost:'~$40 total',desc:'Tier 3 on fabricated PCB. Ground plane. Decoupling at every power pin. 10–20Msps on PCB vs 5Msps on breadboard. Trigger hysteresis.',techs:['KiCad PCB layout','Ground plane strategy','Decoupling placement'],pre:['s4'],cmp:['Hantek 6022BE ~$65']},
   {id:'s6',cat:'scope',tier:5,label:'FPGA acquisition',sub:'AD9288 100Msps + iCE40',cost:'~$90–120 total',gap:true,gapItems:['AD9288 dual 100Msps ADC (~$12 Mouser)','iCE40 FPGA board (~$25)'],desc:'AD9288 dual 8-bit 100Msps dedicated scope ADC. iCE40 FPGA captures into block RAM. Sub-ns trigger. 50–200Msps, 10–70MHz usable BW.',techs:['FPGA HDL Verilog','High-speed PCB','Block RAM management','Digital trigger design'],pre:['s5'],cmp:['Rigol DS1054Z ~$250 used','Hantek 6254BC ~$120']},
