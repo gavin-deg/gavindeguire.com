@@ -98,3 +98,500 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#aaa}
 .source-badge{font-size:8.5px;padding:1px 6px;border-radius:2px;background:#f0ede6;color:#666;font-family:'IBM Plex Mono',monospace}
 .edit-cell{cursor:pointer}
 .edit-cell:hover{background:#f5f4f0!important}
+.inline-input{width:100%;border:none;background:transparent;font-family:'IBM Plex Sans',sans-serif;font-size:11.5px;color:var(--text);padding:0}
+.inline-input:focus{outline:1px solid #aaa;border-radius:2px;padding:0 2px}
+
+/* LOG */
+.log-entry{padding:8px 0;border-bottom:1px solid #f0ede6}
+.log-entry:last-child{border-bottom:none}
+.log-ts{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:2px}
+.log-build-tag{font-size:8.5px;padding:1px 5px;border-radius:2px;font-family:'IBM Plex Mono',monospace;margin-left:4px}
+.log-note{font-size:11.5px;color:var(--text);line-height:1.5;margin-top:3px}
+.log-add-form{border-top:1px solid var(--border);padding-top:10px;margin-top:10px}
+.log-add-form textarea{width:100%;resize:vertical;min-height:56px;margin-bottom:6px}
+
+/* BATCH */
+.batch-source{margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.batch-source:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.batch-source-header{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}
+.batch-source-name{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600}
+.batch-threshold{font-size:10px;font-family:'IBM Plex Mono',monospace;margin-left:auto}
+.batch-threshold.over{color:var(--wfgen)}
+.batch-threshold.under{color:#A32D2D}
+.batch-item{display:flex;align-items:center;gap:8px;font-size:11.5px;padding:3px 0;border-bottom:1px solid #f0ede6}
+.batch-item:last-child{border-bottom:none}
+.batch-item-name{flex:1;color:var(--text)}
+.batch-item-cost{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);white-space:nowrap}
+
+/* NOTES */
+.notes-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.notes-ts{font-size:9px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-left:auto}
+.notes-area{width:100%;min-height:160px;resize:vertical;font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.6;padding:8px}
+.notes-preview{min-height:80px;font-size:12px;line-height:1.7;padding:8px;border:1px solid var(--border);border-radius:3px;background:#faf9f7}
+.notes-preview p{margin-bottom:8px}
+.notes-preview h1,.notes-preview h2,.notes-preview h3{font-family:'IBM Plex Mono',monospace;margin:10px 0 4px}
+.notes-preview pre{background:#f0ede6;padding:8px;border-radius:3px;overflow-x:auto;margin-bottom:8px}
+.notes-preview code{background:#f0ede6;padding:1px 4px;border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:11px}
+.notes-preview pre code{background:none;padding:0}
+.notes-preview ul,.notes-preview ol{padding-left:20px;margin-bottom:8px}
+
+/* IFRAME */
+.skill-tree-iframe{width:100%;height:680px;border:none;display:block}
+</style>
+</head>
+<body>
+<div id="navbar">
+  <span id="nav-title">ELECTRONICS LAB</span>
+  <span id="nav-ts"></span>
+</div>
+<div id="grid"></div>
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+const NS='labdash:';
+const K={builds:NS+'builds',parts:NS+'parts',log:NS+'log',notes:NS+'notes',layout:NS+'layout',ts:NS+'lastUpdated'};
+
+function ld(key,def){try{const v=localStorage.getItem(key);return v===null?def:JSON.parse(v)}catch(e){return def}}
+function sv(key,val){
+  localStorage.setItem(key,JSON.stringify(val));
+  if(key!==K.ts){
+    const ts=new Date().toISOString();
+    localStorage.setItem(K.ts,ts);
+    const el=document.getElementById('nav-ts');
+    if(el)el.textContent='updated '+fmtTs(ts);
+  }
+}
+
+// ── DEFAULTS ────────────────────────────────────────────────────────────────
+const DEF_BUILDS=[
+  {id:'b1',title:'WF Gen output stage',note:'Debug signal chain fault after AD9833 output — check TL072 biasing',tag:'wfgen',col:'debug'},
+  {id:'b2',title:'HC14 drone coupling cap fix',note:'Replace 22µF → 1000µF output coupling caps, fix speaker lead',tag:'synth',col:'breadboard'},
+  {id:'b3',title:'LM317/337 PSU',note:'19.5V brick input, need 4700µF 35V filter caps from Mouser order',tag:'psu',col:'breadboard'},
+];
+const DEF_PARTS=[
+  {id:'p1',name:'4700µF 35V electrolytic',qty:4,status:'Wanted',source:'Mouser',cost:0.80,notes:'PSU filter caps (LM317/337 build)'},
+  {id:'p2',name:'0.1% resistors 10kΩ',qty:20,status:'Wanted',source:'Mouser',cost:0.15,notes:'Expo converter + LCR meter reference arm'},
+  {id:'p3',name:'LM4040C-2.5',qty:2,status:'Wanted',source:'Mouser',cost:1.50,notes:'Precision voltage ref for calibrated DVM'},
+  {id:'p4',name:'AD737JRZ true-RMS IC',qty:1,status:'Wanted',source:'Mouser',cost:6.00,notes:'True-RMS to DC for multimeter build'},
+  {id:'p5',name:'TCXO 10MHz ±2ppm',qty:1,status:'Wanted',source:'AliExpress',cost:3.00,notes:'Frequency counter TCXO reference upgrade'},
+];
+const DEF_LAYOUT={order:['w-builds','w-skill','w-parts','w-log','w-batch','w-notes'],collapsed:{}};
+
+// ── WIDGET REGISTRY ─────────────────────────────────────────────────────────
+const WIDGETS={
+  'w-builds':{title:'ACTIVE BUILDS',full:false},
+  'w-skill': {title:'SKILL TREE',full:true},
+  'w-parts': {title:'PARTS / ORDER TRACKER',full:true},
+  'w-log':   {title:'PROBE / DEBUG LOG',full:false},
+  'w-batch': {title:'ORDER BATCH PLANNER',full:false},
+  'w-notes': {title:'BUILD NOTES',full:false},
+};
+
+const TAGS=['scope','wfgen','psu','synth','mm','lcr','fcnt','pi'];
+const TAG_LABELS={scope:'Scope',wfgen:'WF Gen',psu:'PSU',synth:'Synth',mm:'Meter',lcr:'LCR',fcnt:'Freq Ctr',pi:'Pi/FFT'};
+const COLS=[{id:'breadboard',label:'Breadboard'},{id:'debug',label:'Debug'},{id:'done',label:'PCB / Done'}];
+const SOURCES=['Mouser','AliExpress','Amazon','Other'];
+const STATUSES=['Owned','Ordered','Wanted'];
+
+// ── RUNTIME STATE ───────────────────────────────────────────────────────────
+let builds,parts,logEntries,notes,layout;
+let partsSort={field:'status',dir:1};
+let logShowAll=false;
+let notesCurrentBuild=null,notesTimer=null,notesPreview=false;
+
+function loadState(){
+  builds=ld(K.builds,DEF_BUILDS);
+  parts=ld(K.parts,DEF_PARTS);
+  logEntries=ld(K.log,[]);
+  notes=ld(K.notes,{});
+  layout=ld(K.layout,DEF_LAYOUT);
+  const known=Object.keys(WIDGETS);
+  layout.order=layout.order.filter(id=>known.includes(id));
+  known.forEach(id=>{if(!layout.order.includes(id))layout.order.push(id);});
+  if(!layout.collapsed)layout.collapsed={};
+  if(builds.length&&!notesCurrentBuild)notesCurrentBuild=builds[0].id;
+}
+
+// ── UTILS ───────────────────────────────────────────────────────────────────
+function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function fmtTs(iso){
+  if(!iso)return'—';
+  const d=new Date(iso);
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+}
+
+// ── GRID RENDER ──────────────────────────────────────────────────────────────
+function renderGrid(){
+  const grid=document.getElementById('grid');
+  grid.innerHTML='';
+  layout.order.forEach(id=>{
+    const def=WIDGETS[id];if(!def)return;
+    const collapsed=layout.collapsed[id]||false;
+    const div=document.createElement('div');
+    div.className='widget'+(def.full?' full-width':'')+(collapsed?' collapsed':'');
+    div.id=id;
+    div.innerHTML=`<div class="w-header" draggable="true"><span class="w-title">${def.title}</span><span class="w-collapse" onclick="toggleCollapse('${id}')">${collapsed?'▸':'▾'}</span></div><div class="w-body" id="${id}-body"></div>`;
+    grid.appendChild(div);
+  });
+  renderBuilds();renderSkillTree();renderParts();renderLog();renderBatch();renderNotes();
+}
+
+function toggleCollapse(id){
+  layout.collapsed[id]=!layout.collapsed[id];
+  sv(K.layout,layout);
+  const w=document.getElementById(id);if(!w)return;
+  w.classList.toggle('collapsed',layout.collapsed[id]);
+  const btn=w.querySelector('.w-collapse');
+  if(btn)btn.textContent=layout.collapsed[id]?'▸':'▾';
+}
+
+// ── WIDGET: SKILL TREE ───────────────────────────────────────────────────────
+function renderSkillTree(){
+  const body=document.getElementById('w-skill-body');if(!body)return;
+  body.innerHTML='<iframe src="/lab/skill_tree_v4.html" class="skill-tree-iframe" title="Skill Tree"></iframe>';
+}
+
+// ── WIDGET: ACTIVE BUILDS (KANBAN) ──────────────────────────────────────────
+function renderBuilds(){
+  const body=document.getElementById('w-builds-body');if(!body)return;
+  let colOpts=COLS.map(c=>`<option value="${c.id}">${c.label}</option>`).join('');
+  let tagOpts=`<option value="">— tag —</option>`+TAGS.map(t=>`<option value="${t}">${TAG_LABELS[t]}</option>`).join('');
+
+  let h='<div class="kb-board">';
+  COLS.forEach(col=>{
+    const cards=builds.filter(b=>b.col===col.id);
+    h+=`<div class="kb-col" id="col-${col.id}" data-col="${col.id}"><div class="kb-col-title">${col.label}</div>`;
+    cards.forEach(card=>{
+      h+=`<div class="kb-card" id="card-${card.id}" data-id="${card.id}" draggable="true">`;
+      h+=`<div class="kb-card-title">${esc(card.title)}</div>`;
+      h+=`<div class="kb-card-note">${esc(card.note)}</div>`;
+      h+=`<div class="kb-card-footer">`;
+      if(card.tag)h+=`<span class="kb-tag tag-${card.tag}">${TAG_LABELS[card.tag]||card.tag}</span>`;
+      h+=`<span class="kb-card-actions"><button class="btn-xs" onclick="editCard('${card.id}')">edit</button><button class="btn-xs del" onclick="delCard('${card.id}')">×</button></span>`;
+      h+=`</div></div>`;
+    });
+    h+=`</div>`;
+  });
+  h+=`</div>`;
+
+  h+=`<div class="kb-add-form" id="add-card-form" style="display:none">
+    <div class="form-row">
+      <input type="text" id="nc-title" placeholder="Build title" style="flex:2">
+      <select id="nc-col">${colOpts}</select>
+      <select id="nc-tag">${tagOpts}</select>
+    </div>
+    <div class="form-row"><input type="text" id="nc-note" placeholder="Status note" style="flex:1"></div>
+    <div class="form-row">
+      <button class="btn-sm primary" onclick="addCard()">Add</button>
+      <button class="btn-sm" onclick="toggleAddCardForm()">Cancel</button>
+    </div>
+  </div>
+  <div style="margin-top:8px"><button class="btn-sm" onclick="toggleAddCardForm()">+ Add build</button></div>`;
+
+  body.innerHTML=h;
+  initKanbanSortable();
+}
+
+function toggleAddCardForm(){
+  const f=document.getElementById('add-card-form');
+  if(f)f.style.display=f.style.display==='none'?'block':'none';
+}
+function addCard(){
+  const title=document.getElementById('nc-title')?.value.trim();if(!title)return;
+  builds.push({id:genId(),title,note:document.getElementById('nc-note')?.value.trim()||'',tag:document.getElementById('nc-tag')?.value||'',col:document.getElementById('nc-col')?.value||'breadboard'});
+  sv(K.builds,builds);
+  renderBuilds();renderBatch();renderNotes();renderLog();
+}
+function delCard(id){
+  builds=builds.filter(b=>b.id!==id);
+  sv(K.builds,builds);renderBuilds();renderBatch();renderNotes();renderLog();
+}
+function editCard(id){
+  const card=builds.find(b=>b.id===id);if(!card)return;
+  const el=document.getElementById('card-'+id);if(!el)return;
+  const colOpts=COLS.map(c=>`<option value="${c.id}"${card.col===c.id?' selected':''}>${c.label}</option>`).join('');
+  const tagOpts=`<option value="">— tag —</option>`+TAGS.map(t=>`<option value="${t}"${card.tag===t?' selected':''}>${TAG_LABELS[t]}</option>`).join('');
+  el.innerHTML=`<div style="display:flex;flex-direction:column;gap:5px">
+    <input type="text" id="ec-t-${id}" value="${esc(card.title)}" style="width:100%">
+    <input type="text" id="ec-n-${id}" value="${esc(card.note)}" style="width:100%" placeholder="Status note">
+    <div style="display:flex;gap:4px">
+      <select id="ec-tag-${id}">${tagOpts}</select>
+      <select id="ec-col-${id}">${colOpts}</select>
+    </div>
+    <div style="display:flex;gap:4px">
+      <button class="btn-sm primary" onclick="saveCard('${id}')">Save</button>
+      <button class="btn-sm" onclick="renderBuilds()">Cancel</button>
+    </div>
+  </div>`;
+  el.removeAttribute('draggable');
+  document.getElementById('ec-t-'+id)?.focus();
+}
+function saveCard(id){
+  const card=builds.find(b=>b.id===id);if(!card)return;
+  const t=document.getElementById('ec-t-'+id)?.value.trim();
+  if(t)card.title=t;
+  card.note=document.getElementById('ec-n-'+id)?.value.trim()||'';
+  card.tag=document.getElementById('ec-tag-'+id)?.value||'';
+  card.col=document.getElementById('ec-col-'+id)?.value||card.col;
+  sv(K.builds,builds);renderBuilds();renderBatch();renderNotes();renderLog();
+}
+function moveCard(id,toCol){
+  const card=builds.find(b=>b.id===id);
+  if(card&&card.col!==toCol){card.col=toCol;sv(K.builds,builds);renderBuilds();}
+}
+
+// ── WIDGET: PARTS / ORDER TRACKER ───────────────────────────────────────────
+function renderParts(){
+  const body=document.getElementById('w-parts-body');if(!body)return;
+  const fields=['name','qty','status','source','cost','notes'];
+  const hdrs=['Part Name','Qty','Status','Source','Cost (ea.)','Notes'];
+  const sorted=[...parts].sort((a,b)=>{
+    const va=String(a[partsSort.field]??'').toLowerCase();
+    const vb=String(b[partsSort.field]??'').toLowerCase();
+    const nva=parseFloat(a[partsSort.field]);const nvb=parseFloat(b[partsSort.field]);
+    if(!isNaN(nva)&&!isNaN(nvb))return(nva-nvb)*partsSort.dir;
+    return va<vb?-partsSort.dir:va>vb?partsSort.dir:0;
+  });
+
+  let h='<div style="overflow-x:auto"><table class="parts-table"><thead><tr>';
+  hdrs.forEach((lbl,i)=>{
+    const f=fields[i];const arr=partsSort.field===f?(partsSort.dir===1?'↑':'↓'):'';
+    h+=`<th onclick="sortParts('${f}')">${lbl}<span class="sort-arrow">${arr}</span></th>`;
+  });
+  h+='<th></th></tr></thead><tbody>';
+
+  if(sorted.length===0){
+    h+=`<tr><td colspan="7" style="text-align:center;padding:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:11px">No parts yet.</td></tr>`;
+  }
+  sorted.forEach(p=>{
+    h+=`<tr data-id="${p.id}">`;
+    h+=`<td class="edit-cell" onclick="inlineEdit('${p.id}','name',this)">${esc(p.name)}</td>`;
+    h+=`<td class="edit-cell" onclick="inlineEdit('${p.id}','qty',this)">${p.qty}</td>`;
+    h+=`<td class="edit-cell" onclick="inlineEdit('${p.id}','status',this)"><span class="status-badge status-${esc(p.status)}">${esc(p.status)}</span></td>`;
+    h+=`<td class="edit-cell" onclick="inlineEdit('${p.id}','source',this)"><span class="source-badge">${esc(p.source)}</span></td>`;
+    h+=`<td class="edit-cell" onclick="inlineEdit('${p.id}','cost',this)">$${parseFloat(p.cost||0).toFixed(2)}</td>`;
+    h+=`<td class="edit-cell" onclick="inlineEdit('${p.id}','notes',this)">${esc(p.notes)}</td>`;
+    h+=`<td><button class="btn-xs del" onclick="delPart('${p.id}')">×</button></td>`;
+    h+='</tr>';
+  });
+  h+='</tbody></table></div>';
+
+  h+=`<div class="kb-add-form" id="add-part-form" style="display:none;margin-top:8px">
+    <div class="form-row">
+      <input type="text" id="np-name" placeholder="Part name" style="flex:3">
+      <input type="number" id="np-qty" placeholder="Qty" value="1" min="1" style="width:56px">
+      <select id="np-status">${STATUSES.map(s=>`<option>${s}</option>`).join('')}</select>
+      <select id="np-source">${SOURCES.map(s=>`<option>${s}</option>`).join('')}</select>
+    </div>
+    <div class="form-row">
+      <input type="number" id="np-cost" placeholder="Unit $ cost" step="0.01" min="0" style="width:110px">
+      <input type="text" id="np-notes" placeholder="Notes" style="flex:1">
+      <button class="btn-sm primary" onclick="addPart()">Add</button>
+      <button class="btn-sm" onclick="toggleAddPartForm()">Cancel</button>
+    </div>
+  </div>
+  <div style="margin-top:8px"><button class="btn-sm" onclick="toggleAddPartForm()">+ Add part</button></div>`;
+
+  body.innerHTML=h;
+}
+
+function sortParts(field){
+  if(partsSort.field===field)partsSort.dir*=-1;else{partsSort.field=field;partsSort.dir=1;}
+  renderParts();
+}
+function toggleAddPartForm(){
+  const f=document.getElementById('add-part-form');
+  if(f)f.style.display=f.style.display==='none'?'block':'none';
+}
+function addPart(){
+  const name=document.getElementById('np-name')?.value.trim();if(!name)return;
+  parts.push({id:genId(),name,qty:parseInt(document.getElementById('np-qty')?.value)||1,status:document.getElementById('np-status')?.value||'Wanted',source:document.getElementById('np-source')?.value||'Mouser',cost:parseFloat(document.getElementById('np-cost')?.value)||0,notes:document.getElementById('np-notes')?.value.trim()||''});
+  sv(K.parts,parts);renderParts();renderBatch();
+}
+function delPart(id){
+  parts=parts.filter(p=>p.id!==id);sv(K.parts,parts);renderParts();renderBatch();
+}
+function inlineEdit(partId,field,td){
+  const p=parts.find(x=>x.id===partId);if(!p)return;
+  let input;
+  if(field==='status'){
+    input=document.createElement('select');
+    STATUSES.forEach(v=>{const o=document.createElement('option');o.value=o.text=v;if(p[field]===v)o.selected=true;input.appendChild(o);});
+  }else if(field==='source'){
+    input=document.createElement('select');
+    SOURCES.forEach(v=>{const o=document.createElement('option');o.value=o.text=v;if(p[field]===v)o.selected=true;input.appendChild(o);});
+  }else if(field==='qty'||field==='cost'){
+    input=document.createElement('input');input.type='number';input.value=p[field];
+    if(field==='cost'){input.step='0.01';input.min='0';}else{input.step='1';input.min='0';}
+  }else{
+    input=document.createElement('input');input.type='text';input.value=p[field]||'';
+  }
+  input.className='inline-input';input.style.width='100%';
+  td.innerHTML='';td.appendChild(input);input.focus();
+  if(input.select&&field!=='status'&&field!=='source')input.select();
+  function commit(){
+    let val=input.value;
+    if(field==='qty')val=parseInt(val)||0;
+    else if(field==='cost')val=parseFloat(val)||0;
+    p[field]=val;sv(K.parts,parts);renderParts();renderBatch();
+  }
+  input.addEventListener('blur',commit,{once:true});
+  input.addEventListener('keydown',e=>{if(e.key==='Enter')input.blur();if(e.key==='Escape'){input.removeEventListener('blur',commit);renderParts();}});
+}
+
+// ── WIDGET: PROBE / DEBUG LOG ────────────────────────────────────────────────
+function renderLog(){
+  const body=document.getElementById('w-log-body');if(!body)return;
+  const all=[...logEntries].reverse();
+  const display=logShowAll?all:all.slice(0,30);
+  let h='';
+  if(display.length===0){
+    h='<div class="empty-state">No log entries yet.</div>';
+  }else{
+    display.forEach(e=>{
+      const bld=builds.find(b=>b.id===e.buildId);
+      h+=`<div class="log-entry"><div class="log-ts">${fmtTs(e.ts)}`;
+      if(bld)h+=`<span class="log-build-tag tag-${bld.tag||''}">${esc(bld.title)}</span>`;
+      h+=`</div><div class="log-note">${esc(e.note)}</div></div>`;
+    });
+    if(logEntries.length>30&&!logShowAll){
+      h+=`<div style="margin-top:8px;text-align:center"><button class="btn-sm" onclick="logShowAll=true;renderLog()">Show all ${logEntries.length} entries</button></div>`;
+    }
+  }
+  const buildOpts=`<option value="">— build (optional) —</option>`+builds.map(b=>`<option value="${b.id}">${esc(b.title)}</option>`).join('');
+  h+=`<div class="log-add-form">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.1em;color:var(--muted);margin-bottom:6px">NEW ENTRY</div>
+    <div class="form-row"><select id="log-build" style="flex:1">${buildOpts}</select></div>
+    <textarea id="log-note" placeholder="Debug session notes…" rows="3"></textarea>
+    <button class="btn-sm primary" onclick="addLogEntry()">Log entry</button>
+  </div>`;
+  body.innerHTML=h;
+}
+function addLogEntry(){
+  const note=document.getElementById('log-note')?.value.trim();if(!note)return;
+  logEntries.push({id:genId(),ts:new Date().toISOString(),buildId:document.getElementById('log-build')?.value||null,note});
+  sv(K.log,logEntries);renderLog();
+}
+
+// ── WIDGET: ORDER BATCH PLANNER ──────────────────────────────────────────────
+function renderBatch(){
+  const body=document.getElementById('w-batch-body');if(!body)return;
+  const MOUSER_THRESHOLD=50;
+  const wanted=parts.filter(p=>p.status==='Wanted');
+  if(wanted.length===0){body.innerHTML='<div class="empty-state">No Wanted parts in tracker.</div>';return;}
+  const groups={};
+  wanted.forEach(p=>{const src=p.source||'Other';if(!groups[src])groups[src]=[];groups[src].push(p);});
+  const ORDER=['Mouser','AliExpress','Amazon','Other'];
+  let h='';
+  const allSrcs=[...ORDER.filter(s=>groups[s]),...Object.keys(groups).filter(s=>!ORDER.includes(s)&&groups[s])];
+  allSrcs.forEach(src=>{
+    const items=groups[src];
+    const subtotal=items.reduce((sum,p)=>sum+(parseFloat(p.cost)||0)*(parseInt(p.qty)||1),0);
+    h+=`<div class="batch-source"><div class="batch-source-header"><span class="batch-source-name">${esc(src)}</span>`;
+    if(src==='Mouser'){
+      const diff=subtotal-MOUSER_THRESHOLD;
+      const cls=diff>=0?'over':'under';
+      const msg=diff>=0?`$${subtotal.toFixed(2)} — ✓ free shipping`:`$${subtotal.toFixed(2)} — $${Math.abs(diff).toFixed(2)} under $${MOUSER_THRESHOLD} threshold`;
+      h+=`<span class="batch-threshold ${cls}">${msg}</span>`;
+    }else{
+      h+=`<span class="batch-threshold">$${subtotal.toFixed(2)}</span>`;
+    }
+    h+=`</div>`;
+    items.forEach(p=>{
+      const line=(parseFloat(p.cost)||0)*(parseInt(p.qty)||1);
+      h+=`<div class="batch-item"><span class="batch-item-name">${esc(p.name)} <span style="color:var(--muted)">× ${p.qty}</span></span><span class="batch-item-cost">$${line.toFixed(2)}</span></div>`;
+    });
+    h+=`</div>`;
+  });
+  body.innerHTML=h;
+}
+
+// ── WIDGET: BUILD NOTES / SCRATCHPAD ─────────────────────────────────────────
+function renderNotes(){
+  const body=document.getElementById('w-notes-body');if(!body)return;
+  if(builds.length&&!notesCurrentBuild)notesCurrentBuild=builds[0].id;
+  const buildOpts=builds.length
+    ?builds.map(b=>`<option value="${b.id}"${b.id===notesCurrentBuild?' selected':''}>${esc(b.title)}</option>`).join('')
+    :`<option value="">— add a build first —</option>`;
+  const entry=notesCurrentBuild&&notes[notesCurrentBuild];
+  const ts=entry?.ts||null;
+  const txt=entry?.text||'';
+  let h=`<div class="notes-header">
+    <select id="notes-build-sel" onchange="selectBuild(this.value)">${buildOpts}</select>
+    <button class="btn-sm" style="font-size:9px;padding:3px 8px" onclick="toggleNotesPreview()">${notesPreview?'EDIT':'PREVIEW'}</button>
+    <span class="notes-ts">${ts?'saved '+fmtTs(ts):''}</span>
+  </div>`;
+  if(notesPreview){
+    const rendered=typeof marked!=='undefined'?marked.parse(txt):esc(txt).replace(/\n/g,'<br>');
+    h+=`<div class="notes-preview">${rendered||'<span style="color:var(--muted);font-size:11px;font-family:\'IBM Plex Mono\',monospace">nothing here yet</span>'}</div>`;
+  }else{
+    h+=`<textarea class="notes-area" id="notes-ta" oninput="notesChanged()" placeholder="Circuit notes, component values, LTspice results…">${esc(txt)}</textarea>`;
+  }
+  body.innerHTML=h;
+}
+function selectBuild(id){notesCurrentBuild=id;notesPreview=false;renderNotes();}
+function toggleNotesPreview(){
+  const ta=document.getElementById('notes-ta');
+  if(ta&&notesCurrentBuild){notes[notesCurrentBuild]={text:ta.value,ts:new Date().toISOString()};sv(K.notes,notes);}
+  notesPreview=!notesPreview;renderNotes();
+}
+function notesChanged(){
+  clearTimeout(notesTimer);
+  notesTimer=setTimeout(()=>{
+    const ta=document.getElementById('notes-ta');
+    if(!ta||!notesCurrentBuild)return;
+    notes[notesCurrentBuild]={text:ta.value,ts:new Date().toISOString()};
+    sv(K.notes,notes);
+    const tsEl=document.querySelector('.notes-ts');
+    if(tsEl)tsEl.textContent='saved '+fmtTs(notes[notesCurrentBuild].ts);
+  },500);
+}
+
+// ── DRAG: SORTABLEJS ─────────────────────────────────────────────────────────
+let _gridSortable=null;
+
+function initGridSortable(){
+  if(_gridSortable)_gridSortable.destroy();
+  _gridSortable=Sortable.create(document.getElementById('grid'),{
+    handle:'.w-header',
+    animation:150,
+    ghostClass:'sortable-ghost',
+    chosenClass:'sortable-chosen',
+    filter:'iframe,input,select,textarea,button',
+    onEnd:()=>{
+      layout.order=[...document.querySelectorAll('#grid>.widget')].map(el=>el.id);
+      sv(K.layout,layout);
+    }
+  });
+}
+
+function initKanbanSortable(){
+  document.querySelectorAll('.kb-col').forEach(col=>{
+    Sortable.create(col,{
+      group:'kanban',
+      animation:150,
+      ghostClass:'sortable-ghost',
+      chosenClass:'sortable-chosen',
+      filter:'button,input,select',
+      onEnd:evt=>{
+        const card=builds.find(b=>b.id===evt.item.dataset.id);
+        if(card){card.col=evt.to.dataset.col;sv(K.builds,builds);}
+      }
+    });
+  });
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+function init(){
+  loadState();
+  renderGrid();
+  initGridSortable();
+  const ts=ld(K.ts,null);
+  const nav=document.getElementById('nav-ts');
+  if(nav&&ts)nav.textContent='updated '+fmtTs(ts);
+}
+init();
+</script>
+</body>
+</html>
+
