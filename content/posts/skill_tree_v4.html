@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Electronics Skill Tree — Gavin</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f4f0;--surface:#fff;--border:#e2e0d8;--text:#1a1917;--muted:#8a8880;
+  --scope:#1655A2;--scope-bg:#EAF1FB;
+  --wfgen:#0A6B4F;--wfgen-bg:#E3F5EE;
+  --mm:#7A4500;--mm-bg:#FBF0DC;
+  --psu:#4A40B0;--psu-bg:#EEEDFE;
+  --synth:#8C2B4E;--synth-bg:#FCE8F1;
+  --pi:#1B6B30;--pi-bg:#E8F5E9;
+  --lcr:#5A6B00;--lcr-bg:#F2F5DC;
+  --fcnt:#00617A;--fcnt-bg:#DCF2F8;
+  --anchor:#C07800;--anchor-bg:#FFF8E8;
+  --gap:#A32D2D;--gap-bg:#FCE8E8;
+}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);font-size:13px;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+/* TAB BAR */
+#tabs{display:flex;background:var(--surface);border-bottom:2px solid var(--border);flex-shrink:0}
+.tab{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;padding:8px 18px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;letter-spacing:.04em;transition:color .15s,border-color .15s}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--text);border-bottom-color:var(--text)}
+
+/* TREE VIEW */
+#tree-view{display:flex;flex-direction:column;flex:1;overflow:hidden}
+#toolbar{display:flex;gap:4px;padding:6px 12px;background:var(--surface);border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center;flex-shrink:0}
+.fb{font-family:'IBM Plex Mono',monospace;font-size:9.5px;padding:2px 8px;border-radius:3px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;letter-spacing:.04em;transition:all .12s}
+.fb:hover{color:var(--text);border-color:#aaa}
+.fb.on{background:var(--text);color:#fff;border-color:transparent}
+.leg{display:flex;align-items:center;gap:3px;font-size:9px;color:var(--muted);margin-left:3px;font-family:'IBM Plex Mono',monospace}
+.ls{width:10px;height:10px;border-radius:2px}
+#main{display:flex;flex:1;overflow:hidden}
+#cw{flex:1;overflow:auto;padding:12px 12px 12px 20px}
+svg#tree{display:block}
+#panel{width:0;border-left:1px solid var(--border);overflow:hidden;transition:width .2s;flex-shrink:0;background:var(--surface)}
+#panel.open{width:280px;overflow-y:auto}
+#pi{padding:14px;min-width:280px;position:relative}
+h3{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;margin-bottom:3px;padding-right:18px;letter-spacing:.02em}
+.badge{font-family:'IBM Plex Mono',monospace;font-size:8.5px;padding:2px 5px;border-radius:2px;background:#f0ede6;color:#666;display:inline-block;margin-bottom:5px;letter-spacing:.05em}
+.cost{font-size:11px;color:var(--muted);margin-bottom:5px;display:block;font-family:'IBM Plex Mono',monospace}
+.desc{font-size:11px;color:#555;line-height:1.6;margin-bottom:7px}
+.sh{font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:600;letter-spacing:.1em;color:#bbb;margin:8px 0 3px;text-transform:uppercase}
+.tc{font-size:9.5px;padding:2px 6px;border-radius:3px;margin:2px 2px 0 0;display:inline-block;background:#e8f0fb;color:#185FA5;font-family:'IBM Plex Mono',monospace}
+.pc{font-size:9.5px;padding:2px 6px;border-radius:3px;margin:2px 2px 0 0;display:inline-block;cursor:pointer;border:1px solid var(--border);background:#faf9f7;color:#555;font-family:'IBM Plex Mono',monospace;transition:background .1s}
+.pc:hover{background:#f0ede6}
+.cm{font-size:10px;color:#666;padding:2px 0;border-bottom:1px solid #f0ede6;font-family:'IBM Plex Mono',monospace}
+.cm:last-child{border:none}
+.gc{font-size:9.5px;padding:2px 6px;border-radius:3px;margin:2px 2px 0 0;display:inline-block;background:var(--gap-bg);color:var(--gap);border:1px solid #f7c1c1;font-family:'IBM Plex Mono',monospace}
+#cx{position:absolute;top:12px;right:12px;cursor:pointer;font-size:14px;color:#bbb;font-family:'IBM Plex Mono',monospace}
+#cx:hover{color:var(--text)}
+.an{font-size:9.5px;padding:3px 7px;border-radius:3px;background:var(--anchor-bg);color:var(--anchor);margin-bottom:6px;display:inline-block;border:1px solid #f0d080;font-family:'IBM Plex Mono',monospace}
+.gn{font-size:9.5px;padding:3px 7px;border-radius:3px;background:var(--gap-bg);color:var(--gap);margin-bottom:6px;display:inline-block;border:1px solid #f7c1c1;font-family:'IBM Plex Mono',monospace}
+.nd{cursor:pointer}
+.nd:hover rect{opacity:.82}
+
+/* ROADMAP VIEW */
+#roadmap-view{flex:1;overflow:auto;padding:24px 32px;display:none}
+.rm-header{margin-bottom:28px}
+.rm-header h2{font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;letter-spacing:.03em;margin-bottom:4px}
+.rm-header p{font-size:12px;color:var(--muted);max-width:600px;line-height:1.6}
+.rm-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:1100px}
+.rm-phase{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:18px}
+.rm-phase-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.rm-phase-num{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.12em;color:var(--muted);background:#f0ede6;padding:2px 7px;border-radius:2px}
+.rm-phase-title{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600}
+.rm-phase-sub{font-size:10px;color:var(--muted);margin-bottom:12px;line-height:1.5}
+.rm-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #f0ede6}
+.rm-item:last-child{border:none}
+.rm-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.rm-dot.now{background:#2E7D32;box-shadow:0 0 0 2px #a5d6a7}
+.rm-dot.next{background:var(--anchor);box-shadow:0 0 0 2px #f9d89a}
+.rm-dot.soon{background:#4A90D9;box-shadow:0 0 0 2px #b3d4f5}
+.rm-dot.later{background:#bbb;box-shadow:0 0 0 2px #e0e0e0}
+.rm-item-body{}
+.rm-item-label{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;margin-bottom:2px}
+.rm-item-desc{font-size:10px;color:#666;line-height:1.5}
+.rm-tag{font-family:'IBM Plex Mono',monospace;font-size:8.5px;padding:1px 5px;border-radius:2px;margin-right:3px;margin-top:3px;display:inline-block}
+.rm-legend{display:flex;gap:16px;margin-top:20px;margin-bottom:28px;flex-wrap:wrap}
+.rm-legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace}
+.rm-blocker{font-size:9.5px;color:var(--gap);background:var(--gap-bg);padding:1px 5px;border-radius:2px;font-family:'IBM Plex Mono',monospace;margin-top:3px;display:inline-block}
+.rm-win{font-size:9.5px;color:#0A6B4F;background:#E3F5EE;padding:1px 5px;border-radius:2px;font-family:'IBM Plex Mono',monospace;margin-top:3px;display:inline-block}
+.complete-btn{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.07em;padding:5px 10px;border-radius:3px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;margin-top:12px;display:block;width:100%;transition:all .15s;text-transform:uppercase}
+.complete-btn:hover{border-color:#0A6B4F;color:#0A6B4F}
+.complete-btn.done{background:var(--wfgen-bg);color:var(--wfgen);border-color:#7ecfb2}
+</style>
+</head>
+<body>
+<div id="tabs">
+  <div class="tab active" onclick="switchTab('tree',this)">SKILL TREE</div>
+  <div class="tab" onclick="switchTab('roadmap',this)">ROADMAP</div>
+</div>
+
+<!-- TREE VIEW -->
+<div id="tree-view">
+<div id="toolbar">
+  <span style="font-size:9px;color:var(--muted);font-family:'IBM Plex Mono',monospace;letter-spacing:.05em">FILTER</span>
+  <button class="fb on" onclick="flt('all',this)">ALL</button>
+  <button class="fb" onclick="flt('scope',this)">SCOPE</button>
+  <button class="fb" onclick="flt('wfgen',this)">WF GEN</button>
+  <button class="fb" onclick="flt('mm',this)">METER</button>
+  <button class="fb" onclick="flt('psu',this)">PSU</button>
+  <button class="fb" onclick="flt('synth',this)">SYNTH</button>
+  <button class="fb" onclick="flt('lcr',this)">LCR</button>
+  <button class="fb" onclick="flt('fcnt',this)">FREQ CTR</button>
+  <div style="flex:1"></div>
+  <div class="leg"><div class="ls" style="background:var(--scope)"></div>Scope</div>
+  <div class="leg"><div class="ls" style="background:var(--wfgen)"></div>WF Gen</div>
+  <div class="leg"><div class="ls" style="background:var(--mm)"></div>Meter</div>
+  <div class="leg"><div class="ls" style="background:var(--psu)"></div>PSU</div>
+  <div class="leg"><div class="ls" style="background:var(--synth)"></div>Synth</div>
+  <div class="leg"><div class="ls" style="background:var(--pi)"></div>Pi/FFT</div>
+  <div class="leg"><div class="ls" style="background:var(--lcr)"></div>LCR</div>
+  <div class="leg"><div class="ls" style="background:var(--fcnt)"></div>Freq Ctr</div>
+  <div class="leg"><div class="ls" style="border:2px solid var(--anchor);background:transparent"></div>Anchor</div>
+  <div class="leg"><div class="ls" style="border:2px dashed var(--gap);background:var(--gap-bg)"></div>Gap</div>
+</div>
+<div id="main">
+<div id="cw"><svg id="tree" width="100%"></svg></div>
+<div id="panel"><div id="pi"><span id="cx" onclick="closeP()">×</span><div id="pc"></div></div></div>
+</div>
+</div>
+
+<!-- ROADMAP VIEW -->
+<div id="roadmap-view">
+<div class="rm-header">
+  <h2>Project Roadmap</h2>
+  <p>Current and near-term builds ordered by dependency and impact. Each phase represents a coherent batch of work that unlocks the next. Skipped or collapsed tiers from the skill tree are noted.</p>
+</div>
+<div class="rm-legend">
+  <div class="rm-legend-item"><div class="rm-dot now"></div>Active now</div>
+  <div class="rm-legend-item"><div class="rm-dot next"></div>Next up — unblocked</div>
+  <div class="rm-legend-item"><div class="rm-dot soon"></div>Soon — 1 blocker</div>
+  <div class="rm-legend-item"><div class="rm-dot later"></div>Later</div>
+</div>
+<div class="rm-grid">
+
+<div class="rm-phase">
+  <div class="rm-phase-head"><span class="rm-phase-num">PHASE 0</span><span class="rm-phase-title">Anchor — Complete ✓</span></div>
+  <p class="rm-phase-sub">DS1052E repair done. Running continuously on both channels at 50MHz. Staying at 50MHz — no unlock needed for current work.</p>
+  <div class="rm-item">
+    <div class="rm-dot now" style="background:#2E7D32;box-shadow:0 0 0 2px #a5d6a7"></div>
+    <div class="rm-item-body">
+      <div class="rm-item-label" style="color:#2E7D32">Rigol DS1052E — working ✓</div>
+      <div class="rm-item-desc">Both channels confirmed stable. 50MHz sufficient for all synth, PSU, and audio-band work. Anchor is live and validating downstream builds.</div>
+      <span class="rm-win">Complete — unblocks all downstream calibration</span>
+    </div>
+  </div>
+</div>
+
+<div class="rm-phase">
+  <div class="rm-phase-head"><span class="rm-phase-num">PHASE 1</span><span class="rm-phase-title">PSU — Unlock Split Rail</span></div>
+  <p class="rm-phase-sub">Parts list shows 19.5V laptop bricks on hand. That's your LM317/337 input — no purchase needed. This unblocks all op-amp work.</p>
+  <div class="rm-item">
+    <div class="rm-dot next"></div>
+    <div class="rm-item-body">
+      <div class="rm-item-label">LM317/337 ±15V linear PSU</div>
+      <div class="rm-item-desc">Use 19.5V Dell/HP brick (owned). Bridge rectifier → 4700µF 35V filter caps → LM317/337. Dual-rail ±15V out. All ICs in hand.</div>
+      <span class="rm-win">19.5V bricks in hand — $0 input cost</span>
+    </div>
+  </div>
+  <div class="rm-item">
+    <div class="rm-dot next"></div>
+    <div class="rm-item-body">
+      <div class="rm-item-label">CC/CV error amp loop</div>
+      <div class="rm-item-desc">TL072 error amp around pass transistor. 0–1.5A current limit. Unlocks safe prototyping of synth modules. Skip tier: ICL7660 split supply already working for op-amp breadboard.</div>
+    </div>
+  </div>
+</div>
+
+<div class="rm-phase">
+  <div class="rm-phase-head"><span class="rm-phase-num">PHASE 2</span><span class="rm-phase-title">Synth — Fix Current Build + 555 VCO</span></div>
+  <p class="rm-phase-sub">HC14 drone is breadboarded. Two fixes needed before moving on. 555 VCO is unblocked as a parallel track.</p>
+  <div class="rm-item">
+    <div class="rm-dot now"></div>
+    <div class="rm-item-body">
+      <div class="rm-item-label">HC14 drone: replace coupling caps</div>
+      <div class="rm-item-desc">22µF → 1000µF output coupling caps across all 5 channels. Fix broken speaker lead. Verify AC coupling bias on all channels (gate → 1kΩ → 10µF → pin3, 100kΩ to GND).</div>
+    </div>
+  </div>
+  <div class="rm-item">
+    <div class="rm-dot next"></div>
+    <div class="rm-item-body">
+      <div class="rm-item-label">555 VCO (CV-controlled)</div>
+      <div class="rm-item-desc">NE555 astable with CV input resistor. Not V/oct accurate but teaches V-to-F fundamentals directly. NE555 in transit.</div>
+    </div>
+  </div>
+</div>
+
+<div class="rm-phase">
+  <div class="rm-phase-head"><span class="rm-phase-num">PHASE 3</span><span class="rm-phase-title">WF Gen — Debug + Output Stage</span></div>
+  <p class="rm-phase-sub">AD9833 + amplitude/offset stages breadboarded and powered. Signal chain fault somewhere after AD9833 output — under active debug. Most likely cause: TL072 single-rail biasing. Fix: add ICL7660 split supply to breadboard first.</p>
+  <div class="rm-item">
+    <div class="rm-dot now"></div>
+    <div class="rm-item-body">
+      <div class="rm-item-label">Debug signal chain fault</div>
+      <div class="rm-item-desc">Probe each stage with Rigol in sequence: AD9833 VOUT → filter output → after pot → final TL072 output. First railed or dead node is the fault. Root cause likely missing 2.5V bias on TL072 non-inverting inputs (single-rail operation).</div>
+      <span class="rm-blocker">Fix: add ICL7660+MT3608 split supply to breadboard — all owned</span>
+    </div>
+  </div>
+  <div class="rm-item">
+    <div class="rm-dot next"></div>
+    <div class="rm-item-body">
+      <div class="rm-item-label">Sallen-Key reconstruction filter</div>
+      <div class="rm-item-desc">2nd-order LPF at ~100kHz (TL072 + passives, all in hand). Removes DAC staircase artifacts. THD: ~−40dBc → ~−65dBc. Most impactful single upgrade.</div>
+    </div>
+  </div>
+  <div class="rm-item">
+    <div class="rm-dot next"></div>
+    <div class="rm-item-body">
+      <div class="rm-item-label">Encoder UI (Pico + ST7789V)</div>
+      <div class="rm-item-desc">KY-040 encoder (owned) + ST7789V (in transit). Coarse/fine frequency. Waveform toggle. Feels like an instrument.</div>
+    </div>
+  </div>
+</div>
+
+<div class="rm-phase">
+  <div class="rm-phase-head"><span class="rm-phase-num">PHASE 4</span><span class="rm-phase-title">Scope — Build + Audio FFT</span></div>
+  <p class="rm-phase-sub">Pico audio scope + Pi FFT is the highest-ratio DIY instrumentation available to you. MCP3202 + ST7789V already on the way.</p>
+  <div class="rm-item">
+    <div class="rm-dot soon"></div>
+    <div class="rm-item-body">
+      <div class="rm-item-label">Pico dual-core scope (80–100ksps)</div>
+      <div class="rm-item-desc">Core 0 samples MCP3202, core 1 drives ST7789V. 40kHz usable BW, 12-bit. Full audio band. Level trigger + pre-trigger buffer. Waiting on MCP3202 + ST7789V arrival.</div>
+      <span class="rm-blocker">Waiting: MCP3202 + ST7789V in transit</span>
+    </div>
+  </div>
+  <div class="rm-item">
+    <div class="rm-dot soon"></div>
+    <div class="rm-item-body">
+      <div class="rm-item-label">Pi 3 FFT spectrum analyzer</div>
+      <div class="rm-item-desc">NumPy FFT on incoming Pico sample buffers → HDMI display. Real-time spectrum to 40kHz. Invaluable for synth harmonic analysis. $0 marginal cost. Skip: serial plotter tier is a waste of time given you have an Uno already confirming ADC wiring.</div>
+      <span class="rm-win">$0 — Pi 3 already owned</span>
+    </div>
+  </div>
+  <div class="rm-item">
+    <div class="rm-dot later"></div>
+    <div class="rm-item-body">
+      <div class="rm-item-label">Input protection + buffered front end</div>
+      <div class="rm-item-desc">Resistor divider, 1N4148 clamping, AC/DC coupling. OPA2134 or AD8065 unity-gain buffer. BNC jack. Makes the scope safe to probe real circuits.</div>
+      <span class="rm-blocker">Gap: OPA2134/AD8065, BNC jack</span>
+    </div>
+  </div>
+</div>
+
+<div class="rm-phase">
+  <div class="rm-phase-head"><span class="rm-phase-num">PHASE 5</span><span class="rm-phase-title">LCR Meter — High DIY Ratio</span></div>
+  <p class="rm-phase-sub">Underrated build. AD9833 excitation + bridge + TL072 detector hits 1% accuracy for ~$20 and competes with $80–200 commercial units. Directly useful for synth component selection.</p>
+  <div class="rm-item">
+    <div class="rm-dot later"></div>
+    <div class="rm-item-body">
+      <div class="rm-item-label">AD9833 excitation bridge</div>
+      <div class="rm-item-desc">Reuse WF gen AD9833 as excitation source. Known-value reference arm. TL072 differential detector. Sweeps frequency to find L and C from phase/magnitude response.</div>
+    </div>
+  </div>
+  <div class="rm-item">
+    <div class="rm-dot later"></div>
+    <div class="rm-item-body">
+      <div class="rm-item-label">Auto-ranging LCR + display</div>
+      <div class="rm-item-desc">CD4051 mux for range switching. MCP3202 ADC for measurement. ST7789V display. Measures L, C, R, Q factor, ESR. All ICs in hand except precision references.</div>
+      <span class="rm-blocker">Gap: 0.1% references, LM4040</span>
+    </div>
+  </div>
+</div>
+
+<div class="rm-phase">
+  <div class="rm-phase-head"><span class="rm-phase-num">PHASE 6</span><span class="rm-phase-title">Frequency Counter</span></div>
+  <p class="rm-phase-sub">Best DIY ratio of any instrument. TCXO-referenced Pico PIO counter hits 7–8 digit accuracy for ~$10–15 and competes with $200–400 commercial units.</p>
+  <div class="rm-item">
+    <div class="rm-dot later"></div>
+    <div class="rm-item-body">
+      <div class="rm-item-label">Pico PIO gate counter</div>
+      <div class="rm-item-desc">LM393 squarer (owned) + Pico PIO frequency counter. 1Hz–50MHz. 7-digit display on ST7789V. Gate time from 10ms (fast) to 1s (accurate). All hardware in hand.</div>
+      <span class="rm-win">$0 marginal — all parts owned</span>
+    </div>
+  </div>
+  <div class="rm-item">
+    <div class="rm-dot later"></div>
+    <div class="rm-item-body">
+      <div class="rm-item-label">TCXO reference upgrade</div>
+      <div class="rm-item-desc">Replace Pico crystal with external TCXO (±2ppm, ~$3 AliExpress). Pushes accuracy to 7–8 digits reliably. Essential for V/oct VCO calibration verification.</div>
+    </div>
+  </div>
+</div>
+
+<div class="rm-phase">
+  <div class="rm-phase-head"><span class="rm-phase-num">PHASE 7</span><span class="rm-phase-title">Synth — Expo VCO + Filter</span></div>
+  <p class="rm-phase-sub">Requires Phase 1 PSU + Phase 0 scope. The main signal chain build. Expo converter → VCO → VCF → VCA.</p>
+  <div class="rm-item">
+    <div class="rm-dot later"></div>
+    <div class="rm-item-body">
+      <div class="rm-item-label">Expo converter (matched NPNs)</div>
+      <div class="rm-item-desc">Hand-matched 2N3904 pair (200 on hand) or THAT340. 0.1% precision resistor ladder. TL072 buffer. Foundation of V/oct tracking. Skip: 555 VCO is sufficient to learn V-to-F before needing true expo.</div>
+      <span class="rm-blocker">Gap: 0.1% resistors (Mouser)</span>
+    </div>
+  </div>
+  <div class="rm-item">
+    <div class="rm-dot later"></div>
+    <div class="rm-item-body">
+      <div class="rm-item-label">TL072 integrator VCO</div>
+      <div class="rm-item-desc">Integrator driven by expo converter current. Triangle + square outputs. 3296W 25-turn trimmers for V/oct calibration. Calibrate against WF gen + DS1052E simultaneously.</div>
+    </div>
+  </div>
+  <div class="rm-item">
+    <div class="rm-dot later"></div>
+    <div class="rm-item-body">
+      <div class="rm-item-label">LM13700 OTA VCF + VCA</div>
+      <div class="rm-item-desc">OTA as voltage-controlled filter and VCA. CV-controlled cutoff. Resonance via feedback. AR envelope generator. Complete gated voice.</div>
+    </div>
+  </div>
+</div>
+
+<div class="rm-phase" style="grid-column:1/-1">
+  <div class="rm-phase-head"><span class="rm-phase-num">PHASE 8</span><span class="rm-phase-title">PCB Consolidation — KiCad → JLCPCB</span></div>
+  <p class="rm-phase-sub">After breadboard validation of each instrument, consolidate to fabricated PCBs. Scope PCB unlocks the high-frequency ADC path. Synth PCB is the final deliverable.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:4px">
+    <div class="rm-item" style="border:1px solid var(--border);border-radius:4px;padding:10px">
+      <div class="rm-dot later"></div>
+      <div class="rm-item-body">
+        <div class="rm-item-label">Scope PCB v1</div>
+        <div class="rm-item-desc">Tier 4 circuit on 2-layer KiCad with GND plane. 10–20Msps vs 5Msps on breadboard. Unlocks AD9288 FPGA path.</div>
+      </div>
+    </div>
+    <div class="rm-item" style="border:1px solid var(--border);border-radius:4px;padding:10px">
+      <div class="rm-dot later"></div>
+      <div class="rm-item-body">
+        <div class="rm-item-label">WF Gen PCB v1</div>
+        <div class="rm-item-desc">AD9833 + filter bank + amplitude on 2-layer KiCad. SMD 0402/0603. SMA output. Clean above 5MHz.</div>
+      </div>
+    </div>
+    <div class="rm-item" style="border:1px solid var(--border);border-radius:4px;padding:10px">
+      <div class="rm-dot later"></div>
+      <div class="rm-item-body">
+        <div class="rm-item-label">Full Voice PCB (VCO+VCF+VCA)</div>
+        <div class="rm-item-desc">Complete synth voice on fabricated PCB. LEGO enclosure. Panel jacks for CV, gate, audio out.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- rm-grid -->
+
+<div style="margin-top:24px;max-width:700px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px">
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.1em;color:var(--muted);margin-bottom:10px">TIERS INTENTIONALLY SKIPPED / COLLAPSED</div>
+  <div style="font-size:11px;color:#555;line-height:1.8">
+    <b>Scope T0 (serial plotter):</b> You already have Uno + breadboard confirming ADC wiring. Skip to Pico dual-core directly.<br>
+    <b>PSU T0 (USB only) + T1 (ICL7660):</b> ICL7660 split supply already working. Collapse into: go straight to LM317/337 with owned 19.5V bricks.<br>
+    <b>MM T0–T1 (Uno ADC, LM4040 basic):</b> DT-926 covers basic DC voltage. Skip to the 12-bit MCP3202 DVM once MCP3202 arrives.<br>
+    <b>WF Gen T0 (raw AD9833 only):</b> You've already proven the DDS concept. The output stage is the next real step.<br>
+    <b>Synth T0 → T1 (HC14 → 555):</b> Keep HC14 drone as a parallel exploration but don't treat it as a prerequisite gate for 555 VCO work.
+  </div>
+</div>
+</div><!-- roadmap-view -->
+
+<script>
+function switchTab(name, el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tree-view').style.display = name==='tree'?'flex':'none';
+  document.getElementById('roadmap-view').style.display = name==='roadmap'?'block':'none';
+}
+document.getElementById('tree-view').style.display='flex';
+document.getElementById('roadmap-view').style.display='none';
+
+var completed=new Set(JSON.parse(localStorage.getItem('labdash:completed')||'[]'));
+function toggleComplete(id){
+  if(completed.has(id))completed.delete(id);else completed.add(id);
+  localStorage.setItem('labdash:completed',JSON.stringify([...completed]));
+  openN(id);render();
+}
+var NW=136,NH=54,TH=122,TOP=44;
+// Columns — 8 instrument categories
+var CX={scope:18,wfgen:166,mm:314,psu:462,synth:610,pi3:770,lcr:930,fcnt:1088};
+var CC={
+  scope:  {f:'#EAF1FB',s:'#1655A2',t:'#0C3E82'},
+  wfgen:  {f:'#E3F5EE',s:'#0A6B4F',t:'#074F3A'},
+  mm:     {f:'#FBF0DC',s:'#7A4500',t:'#5A3200'},
+  psu:    {f:'#EEEDFE',s:'#4A40B0',t:'#342E90'},
+  synth:  {f:'#FCE8F1',s:'#8C2B4E',t:'#661E38'},
+  pi3:    {f:'#E8F5E9',s:'#1B6B30',t:'#0F4F20'},
+  lcr:    {f:'#F2F5DC',s:'#5A6B00',t:'#3A4500'},
+  fcnt:   {f:'#DCF2F8',s:'#00617A',t:'#00445A'},
+  anchor: {f:'#FFF8E8',s:'#C07800',t:'#7A4A00'},
+  gap:    {f:'#FCE8E8',s:'#A32D2D',t:'#7A0000'},
+};
+
+var nodes=[
+  // SCOPE
+  {id:'s1',cat:'scope',tier:0,label:'Pico audio scope',sub:'Dual-core + ST7789V',cost:'~$10 total',desc:'Pico core 0 samples MCP3202 exclusively, core 1 drives ST7789V. 80–100ksps, 40kHz usable BW, 12-bit resolution. Level trigger with pre-trigger buffer. Full audio band. Replaces/skips serial plotter tier.',techs:['Dual-core task split','TFT_eSPI driver','Pre-trigger buffer','Level trigger'],pre:[],cmp:['DSO138 ~$18 — you match BW, beat on 12-bit vs 8-bit res']},
+  {id:'s2',cat:'scope',tier:1,label:'Input protection',sub:'Divider+clamp+AC/DC',cost:'+~$1',desc:'Resistor divider with 2.5V bias for bipolar signals. 1N4148 clamping (in hand). AC/DC coupling switch. Multiple voltage ranges. Safe to probe real circuits.',techs:['Voltage divider design','Clamping diodes','AC coupling','Bipolar input bias'],pre:['s1'],cmp:[]},
+  {id:'s3',cat:'scope',tier:2,label:'Buffered front end',sub:'Fast op-amp + BNC',cost:'+~$8',gap:true,gapItems:['OPA2134 or AD8065 op-amp (~$4 Mouser)','BNC jack (~$2 AliExpress)'],desc:'OPA2134 or AD8065 unity-gain input buffer. >1MΩ impedance. Precision attenuator. BNC jack. 8MHz −3dB analog BW. Front end no longer the bottleneck.',techs:['Op-amp input buffer','Impedance matching','BNC termination','Attenuator design'],pre:['s2'],cmp:['Fnirsi DPOX180H ~$55 — comparable BW, inferior res']},
+  {id:'sA',cat:'anchor',tier:2.5,label:'Rigol DS1052E',sub:'Bootstrap anchor — working ✓',cost:'~$80 used eBay',anchor:true,desc:'The one justified buy. 50MHz dual channel. Running continuously on both channels — repair complete. Essential for VCO calibration, filter debug, and validating every downstream DIY build. Kept permanently as calibration reference.',techs:[],pre:[],cmp:['Validates all downstream DIY builds — never deprecated']},
+  {id:'s4',cat:'scope',tier:3,label:'PIO parallel ADC',sub:'AD9280 32Msps + PIO',cost:'~$30 total',gap:true,gapItems:['AD9280 8-bit 32Msps ADC (~$5 AliExpress)'],desc:'AD9280 8-bit 32Msps parallel CMOS ADC. Pico PIO reads 8 data lines into DMA ring buffer. LM393 hardware comparator trigger (in hand). 5–15Msps effective, 1–5MHz usable BW.',techs:['PIO state machine','Parallel ADC interface','DMA ring buffer','Hardware comparator trigger'],pre:['s3'],cmp:['DSO138 kit ~$18 (same architecture)','Hantek 6022BE ~$65']},
+  {id:'s5',cat:'scope',tier:4,label:'Scope PCB v1',sub:'KiCad 2-layer + GND plane',cost:'~$40 total',desc:'Tier 3 on fabricated PCB. Ground plane. Decoupling at every power pin. 10–20Msps on PCB vs 5Msps on breadboard. Trigger hysteresis.',techs:['KiCad PCB layout','Ground plane strategy','Decoupling placement'],pre:['s4'],cmp:['Hantek 6022BE ~$65']},
+  {id:'s6',cat:'scope',tier:5,label:'FPGA acquisition',sub:'AD9288 100Msps + iCE40',cost:'~$90–120 total',gap:true,gapItems:['AD9288 dual 100Msps ADC (~$12 Mouser)','iCE40 FPGA board (~$25)'],desc:'AD9288 dual 8-bit 100Msps dedicated scope ADC. iCE40 FPGA captures into block RAM. Sub-ns trigger. 50–200Msps, 10–70MHz usable BW.',techs:['FPGA HDL Verilog','High-speed PCB','Block RAM management','Digital trigger design'],pre:['s5'],cmp:['Rigol DS1054Z ~$250 used','Hantek 6254BC ~$120']},
+
+  // PI / FFT — collapsed to 3 meaningful tiers
+  {id:'pi0',cat:'pi3',tier:0,label:'Pi 3 scope display',sub:'Pico acq + Pi3 HDMI',cost:'$0 (Pi3 owned)',desc:'Pico handles real-time ADC sampling over USB serial. Pi 3 renders waveform to HDMI monitor. Same BW as Pico scope — Pi3 only handles display. Much larger than ST7789V.',techs:['HDMI display output','USB serial data pipe','Python waveform rendering'],pre:['s1'],cmp:[]},
+  {id:'pi1',cat:'pi3',tier:1,label:'FFT spectrum analyzer',sub:'NumPy FFT on Pi 3',cost:'$0 marginal',desc:'Pi 3 runs NumPy FFT on incoming Pico sample buffers. Real-time spectrum to 40kHz on HDMI. Excellent frequency resolution for synth harmonic analysis. Invaluable for VCF characterization.',techs:['FFT via NumPy','Windowing Hann/Blackman','Spectrum display','Audio harmonic analysis'],pre:['pi0'],cmp:[]},
+  {id:'pi2',cat:'pi3',tier:2,label:'USB audio ADC scope',sub:'24-bit 96kHz via Pi 3',cost:'~$15 (USB audio IF)',gap:true,gapItems:['Behringer UCA202 or similar (~$15 Amazon)'],desc:'USB audio interface gives 24-bit 96kHz ADC on Pi 3. 48kHz Nyquist. Purpose-built for audio-band synth measurement. Far better resolution than MCP3202 for audio work.',techs:['PyAudio / sounddevice','24-bit audio ADC','Audio frequency calibration'],pre:['pi1'],cmp:['24-bit audio precision — legitimate lab-grade for synth work']},
+
+  // WF GEN — collapsed early tiers
+  {id:'w1',cat:'wfgen',tier:0,label:'AD9833 + recon filter',sub:'Sallen-Key LPF + buffer',cost:'$0 (parts in hand)',desc:'AD9833 DDS already working. Add 2nd-order Sallen-Key LPF at ~100kHz (TL072 + passives, all in hand). Unity-gain output buffer, ~50Ω output. THD drops from ~−40dBc to ~−65dBc. Most impactful single upgrade. Skips raw AD9833 tier — already proven.',techs:['Sallen-Key filter design','Pole placement','Output buffering','THD improvement'],pre:[],cmp:['JDS6600 single ch ~$30 at audio freqs']},
+  {id:'w2',cat:'wfgen',tier:1,label:'Variable amplitude + offset',sub:'VGA pot + summing amp',cost:'+~$1',desc:'Non-inverting amp with WH148 pot, 0–3Vpp output. Summing amp adds variable ±5V DC offset. Essential for testing expo converter input range and bias-sensitive circuits. Requires split supply.',techs:['Variable gain amplifier','Summing amplifier','DC offset injection'],pre:['w1'],cmp:['FY3200S ~$28']},
+  {id:'w3',cat:'wfgen',tier:2,label:'Encoder UI',sub:'Pico + KY-040 + ST7789V',cost:'~$0 (all owned)',desc:'Swap Uno for Pico. KY-040 encoder (owned) for coarse/fine frequency. ST7789V display (in transit). Push to toggle waveform. Interrupt-driven. Collapse of 2 tiers — amp and UI combined since both require split supply and display.',techs:['Rotary encoder ISR','UI state machine','Coarse/fine tuning logic'],pre:['w2'],cmp:['FY3200S ~$28','MHS-5200A ~$32']},
+  {id:'w4',cat:'wfgen',tier:3,label:'Dual ch + phase sync',sub:'2× AD9833 + MCP4725 amp',cost:'~$0 (all owned)',desc:'Both AD9833 modules (owned) from same Pico. Phase register offset 0–360° software-settable. MCP4725 I2C DAC (owned) replaces amplitude pot — 12-bit amplitude, ~1mV steps. AM modulation enabled.',techs:['SPI bus sharing','Phase register control','I2C DAC amplitude','AM modulation'],pre:['w3'],cmp:['JDS6600 dual ~$45','FY6900 ~$55']},
+  {id:'w5',cat:'wfgen',tier:4,label:'AD9850 + filter bank',sub:'40MHz DDS + CD4051 LPF',cost:'+~$4',gap:true,gapItems:['AD9850 DDS module (~$4 AliExpress)'],desc:'AD9850 replaces one AD9833. 125Msps clock, 32-bit freq word, 0–40MHz usable. CD4051 mux selects filter bank (100kHz/1MHz/10MHz) under Pico control. Requires PCB — breadboard parasitics kill accuracy above 5MHz.',techs:['AD9850 init sequence','Frequency word calculation','Analog mux filter switching','SFDR and spectral purity'],pre:['w4'],cmp:['Siglent SDG1032X ~$200 used at low freq']},
+  {id:'w6',cat:'wfgen',tier:5,label:'WF gen PCB v1',sub:'KiCad SMD SMA out',cost:'~$35 total',desc:'Full design on 2-layer KiCad PCB. SMD 0402/0603 passives. 50Ω output trace. SMA connector option. Ground plane. Clean above 5MHz.',techs:['SMD soldering 0402/0603','50Ω trace design','SMA connector layout'],pre:['w5'],cmp:['Siglent SDG1032X ~$200 used','Rigol DG1022Z ~$250 used']},
+
+  // MULTIMETER — collapsed T0–T1
+  {id:'m2',cat:'mm',tier:0,label:'12-bit DVM',sub:'MCP3202 + protection',cost:'~$8 total',desc:'MCP3202 (ordered) replaces Uno ADC. 4096 counts, 3.5 digits. 0–500V with 100:1 divider. Fuse + 1N4148 clamping (in hand). LM393 continuity beeper (in hand). Skips Uno ADC and basic LM4040 tiers — DT-926 already covers basic DC.',techs:['Input protection design','Fuse sizing','Continuity detection'],pre:[],cmp:['Fluke 101 ~$25 — approaching on DC voltage accuracy']},
+  {id:'m3',cat:'mm',tier:1,label:'V + I + R + true RMS',sub:'Shunt + AD737 RMS',cost:'~$20 total',gap:true,gapItems:['AD737 true-RMS IC (~$6 Mouser)'],desc:'Current via 1Ω shunt + TL072 differential amp (in hand). Resistance via voltage divider bridge. AD737 true-RMS-to-DC for AC measurement. Handles sine/square/triangle to 200kHz. Collapses 2 previous tiers.',techs:['Wheatstone bridge','Differential amplifier','RMS-to-DC conversion','Crest factor handling'],pre:['m2'],cmp:['UNI-T UT61E ~$35 — matches on true-RMS capability']},
+  {id:'m4',cat:'mm',tier:2,label:'Auto-ranging 16-bit',sub:'ADS1115 + CD4051 + Pico',cost:'~$22 total',gap:true,gapItems:['ADS1115 16-bit ADC module (~$3 AliExpress)'],desc:'ADS1115 16-bit delta-sigma ADC. 65536 counts = 4.5 digits. Built-in PGA for hardware ranging. CD4051 auto-selects divider under Pico control. Range hysteresis. ST7789V display with units.',techs:['Delta-sigma ADC','PGA configuration','Auto-ranging algorithm','Range hysteresis'],pre:['m3'],cmp:['Fluke 115 ~$120 used — matching vertical resolution']},
+  {id:'m5',cat:'mm',tier:3,label:'Calibrated PCB meter',sub:'0.1% R + LM4040C',cost:'~$35 total',gap:true,gapItems:['0.1% resistors (~$5 Mouser)','LM4040C-2.5 low-tempco ref (~$2 Mouser)'],desc:'0.1% resistors throughout. LM4040C-2.5 low-tempco reference. Guard rings on PCB. Calibration routine in Pico flash against Rigol. ±0.05% DC after calibration. Frequency counter via PIO built-in.',techs:['0.1% resistor selection','Temperature coefficient','Guard ring layout','Calibration routine'],pre:['m4','sA'],cmp:['Fluke 117 ~$150 used','Keysight U1232A ~$120 used']},
+
+  // PSU — collapsed T0–T1
+  {id:'p1',cat:'psu',tier:0,label:'ICL7660 split supply',sub:'+/−9–12V (owned)',cost:'$0 — owned',desc:'MT3608 boost + ICL7660 charge pump gives ±9–12V. Found 19.5V laptop bricks are a clean input. Sufficient for all TL072 and initial LM13700 breadboard work. Already functional.',techs:['Charge pump inversion','Boost converter tuning','Split supply decoupling'],pre:[],cmp:[]},
+  {id:'p2',cat:'psu',tier:1,label:'LM317/337 ±15V PSU',sub:'Linear, 19.5V brick in',cost:'~$5 (caps only)',desc:'LM317T + LM337T (in transit). Bridge rectifier, 4700µF 35V filter caps, regulators. 19.5V Dell/HP laptop bricks (owned) are ideal input — rectified ~26V, well within headroom. Key insight: no brick purchase needed.',techs:['LM317/337 design equations','Bridge rectifier sizing','Filter cap calculation','Thermal design'],pre:['p1'],cmp:[]},
+  {id:'p3',cat:'psu',tier:2,label:'CC/CV PSU',sub:'Op-amp error amp loop',cost:'~$5 total',desc:'Constant-current mode via TL072 error amp around pass transistor. Adjustable 0–1.5A current limit. CC/CV LED indicator. Architecture of all real bench PSUs.',techs:['CC/CV control loop','Error amplifier design','Pass transistor selection','Feedback stability'],pre:['p2'],cmp:[]},
+  {id:'p4',cat:'psu',tier:3,label:'Tracked dual-rail + INA219',sub:'Tracking reg + power monitor',cost:'~$5 total',gap:true,gapItems:['INA219 module ($2 AliExpress, already owned)'],desc:'Negative rail tracks positive exactly. INA219 (owned) displays V and I live. <1mV ripple, rails matched ±10mV. Validate tracking against Rigol. Replaces need for bought bench PSU.',techs:['Tracking regulator design','INA219 I2C power monitor','Ripple measurement'],pre:['p3','sA'],cmp:['Mastech HY3005D ~$35 — you match or exceed on tracking']},
+  {id:'p5',cat:'psu',tier:4,label:'PSU PCB v1',sub:'KiCad, star grounding',cost:'~$30 total',desc:'Tier 3 on fabricated PCB. Star grounding topology. Current-sense traces sized for 2A. Panel-mount pots and binding posts. A real instrument.',techs:['Star grounding topology','Current-carrying trace sizing','Panel mount design'],pre:['p4'],cmp:[]},
+
+  // SYNTH
+  {id:'sy0',cat:'synth',tier:0,label:'HC14 drone (fix)',sub:'5-ch Schmitt + LM386',cost:'$0 owned',desc:'74HC14 oscillators driving LM386 amps. Replace 22µF coupling caps with 1000µF. Fix broken speaker lead. AC coupling gate bias verified. First real audio circuit.',techs:['RC oscillator design','AC coupling fix','LM386 biasing','DC offset diagnosis'],pre:['p1'],cmp:[]},
+  {id:'sy1',cat:'synth',tier:1,label:'555 VCO',sub:'CV-controlled freq',cost:'~$2',desc:'NE555 astable with CV input resistor. Not V/oct accurate but teaches V-to-F conversion directly. Audible pitch response to CV. NE555 in hand.',techs:['555 astable design','CV input scaling','V-to-F relationship'],pre:['sy0','w1'],cmp:[]},
+  {id:'sy2',cat:'synth',tier:2,label:'Expo converter',sub:'Matched NPNs + 0.1% ladder',cost:'~$8',gap:true,gapItems:['0.1% resistors 10kΩ ×20 (~$5 Mouser)','THAT340 or hand-match 2N3904 (200 owned)'],desc:'Matched 2N3904 pair (hand-matched from 200 owned) or THAT340. 0.1% precision resistor ladder. TL072 buffer. Foundation of V/oct tracking. Ic = Is·exp(Vbe/Vt) is the governing equation.',techs:['BJT exponential I-V curve','Transistor matching','Precision resistor ladder','Temperature compensation'],pre:['sy1','p2','s2'],cmp:[]},
+  {id:'sy3',cat:'synth',tier:3,label:'Expo VCO',sub:'Integrator + expo core',cost:'~$15 total',desc:'TL072 integrator driven by expo converter current. Triangle and square outputs. 3296W 25-turn trimmers (in transit) for V/oct calibration. Calibrate against WF gen and Rigol simultaneously.',techs:['Integrator oscillator','Triangle/square core','V/oct calibration procedure'],pre:['sy2','w2','sA'],cmp:[]},
+  {id:'sy4',cat:'synth',tier:4,label:'OTA VCF',sub:'LM13700 ladder/state-var',cost:'~$0 (owned)',desc:'LM13700 OTA (owned) as voltage-controlled filter. Ladder or state-variable topology. CV-controlled cutoff. Resonance via feedback. Dual-channel Rigol to compare input vs output simultaneously.',techs:['OTA transconductance','Ladder filter topology','State variable filter','Q factor and resonance'],pre:['sy3','p2','sA'],cmp:[]},
+  {id:'sy5',cat:'synth',tier:5,label:'AR envelope + VCA',sub:'LM13700 VCA + RC env',cost:'~$5',desc:'RC attack-release envelope generator. LM13700 VCA with exponential CV response. Complete gated voice: gate → envelope → VCA → audio out. First playable patch.',techs:['Envelope generator design','Exponential VCA response','Gate signal handling'],pre:['sy4'],cmp:[]},
+  {id:'sy6',cat:'synth',tier:6,label:'Full voice PCB',sub:'VCO+VCF+VCA+ENV KiCad',cost:'~$35 total',desc:'Complete voice on fabricated JLCPCB PCB. Panel jacks for CV, gate, audio. LEGO enclosure. Validate every stage against Rigol and WF gen before committing to PCB.',techs:['Multi-stage PCB layout','Signal chain gain staging','Modular CV/gate interfacing'],pre:['sy5','s5','w6'],cmp:[]},
+
+  // LCR METER — new column
+  {id:'lc0',cat:'lcr',tier:0,label:'RC time-const meter',sub:'Pico PIO + charge curve',cost:'$0 owned',desc:'Pico charges capacitor through known R, measures time to Vth via PIO. Direct C measurement to ~1%. Parallel R measurement via voltage divider. Crude but zero-cost starting point using all owned parts.',techs:['RC time constant','PIO timing','Capacitance measurement'],pre:[],cmp:[]},
+  {id:'lc1',cat:'lcr',tier:1,label:'AD9833 bridge LCR',sub:'Excitation + TL072 detector',cost:'~$5',desc:'Reuse AD9833 WF gen as AC excitation. Known-value reference impedance arm. TL072 differential detector measures amplitude ratio and phase shift. Derives L, C, R from complex impedance. Key insight: the WF gen and LCR meter share the same AD9833.',techs:['Impedance bridge','Phase/magnitude measurement','Complex impedance','AC excitation'],pre:['lc0','w1'],cmp:['DE-5000 LCR ~$60 — approaching on basic L/C accuracy']},
+  {id:'lc2',cat:'lcr',tier:2,label:'Auto-ranging LCR',sub:'CD4051 range + display',cost:'~$8',desc:'CD4051 mux (owned) for range switching. MCP3202 ADC for measurement. ST7789V display. Measures L, C, R, Q factor, ESR across audio-relevant frequency range. Useful for filter component selection.',techs:['Auto-ranging','ESR measurement','Q factor calculation','Component characterization'],pre:['lc1'],cmp:['DE-5000 LCR ~$60','BSIDE BLC81 ~$35']},
+  {id:'lc3',cat:'lcr',tier:3,label:'Calibrated LCR PCB',sub:'0.1% refs + KiCad',cost:'~$20 total',gap:true,gapItems:['0.1% reference resistors (~$5 Mouser)'],desc:'0.1% reference impedances. Guard ring layout. Calibration against known-value components. PCB isolates bridge from breadboard parasitics. 0.5% L/C accuracy achievable.',techs:['Guard ring layout','Calibration curve','Bridge null detection'],pre:['lc2'],cmp:['Keysight E4980A (lab grade) — within 10× on basic accuracy']},
+
+  // FREQUENCY COUNTER — new column
+  {id:'fc0',cat:'fcnt',tier:0,label:'Pico PIO counter',sub:'LM393 squarer + gate',cost:'$0 owned',desc:'LM393 squarer (owned) converts analog signal to TTL. Pico PIO counts edges over gate time. 1Hz–50MHz, 7-digit resolution. Gate time from 10ms to 1s selectable. All hardware in hand — $0 marginal cost. Best DIY/commercial ratio of any instrument.',techs:['LM393 Schmitt squarer','PIO edge counter','Gate time selection','Frequency resolution'],pre:[],cmp:['Uni-T UT622C ~$30 — matches 7-digit, you beat it on BW']},
+  {id:'fc1',cat:'fcnt',tier:1,label:'TCXO reference',sub:'±2ppm external clock',cost:'~$3',gap:true,gapItems:['TCXO 10MHz ±2ppm (~$3 AliExpress)'],desc:'Replace Pico crystal with external TCXO. Pushes accuracy to ±2ppm = 7–8 digit reliable. Essential for V/oct VCO calibration verification — confirms semitone spacing to <1 cent.',techs:['TCXO vs crystal accuracy','Clock injection','ppm to cents conversion'],pre:['fc0'],cmp:['OWON HDS2102S built-in counter ~$90']},
+  {id:'fc2',cat:'fcnt',tier:2,label:'Period + ratio modes',sub:'Multi-mode Pico firmware',cost:'$0 marginal',desc:'Add period measurement (1/f, better for low frequencies), frequency ratio (two inputs), RPM mode. Pico PIO state machine handles all modes. ST7789V display with mode switching via KY-040 encoder.',techs:['Period measurement','Frequency ratio','PIO multi-mode','Low-frequency accuracy'],pre:['fc1'],cmp:['Keysight 53220A ~$800 used — within 3× on basic accuracy']},
+  {id:'fc3',cat:'fcnt',tier:3,label:'Full freq counter PCB',sub:'KiCad + SMA input',cost:'~$20 total',desc:'Counter on fabricated PCB. SMA input connector. Input prescaler for >50MHz extension. Differential input option for clock signals. Professional front panel.',techs:['Prescaler design','Differential input','SMA layout'],pre:['fc2'],cmp:['HP 5316A vintage ~$50 used — matches on core accuracy']},
+];
+
+var NM={};
+nodes.forEach(function(n){NM[n.id]=n;});
+
+var crossEdges=[
+  {f:'p1',t:'w2'},{f:'p1',t:'sy2'},{f:'p1',t:'sy3'},{f:'p1',t:'sy4'},
+  {f:'p2',t:'sy2'},{f:'p2',t:'sy3'},
+  {f:'sA',t:'sy3'},{f:'sA',t:'sy4'},{f:'sA',t:'m5'},{f:'sA',t:'p4'},
+  {f:'s2',t:'sy2'},
+  {f:'w1',t:'sy1'},{f:'w1',t:'lc1'},
+  {f:'w2',t:'sy3'},
+  {f:'s5',t:'w5'},
+  {f:'s1',t:'pi0'},
+  {f:'sy0',t:'sy1'},
+];
+
+var aF='all',sel=null;
+function ny(t){return TOP+t*TH;}
+function npos(id){
+  var n=NM[id];
+  var cx=CX[n.cat]||CX.scope;
+  if(n.anchor){cx=CX.scope+NW+8;}
+  return {x:cx,y:ny(n.tier)};
+}
+function flt(f,btn){
+  aF=f;
+  document.querySelectorAll('.fb').forEach(function(b){b.classList.remove('on');});
+  btn.classList.add('on');
+  render();
+}
+function closeP(){sel=null;document.getElementById('panel').classList.remove('open');render();}
+function openN(id){
+  sel=id;var n=NM[id];
+  var h='';
+  if(n.anchor)h+='<span class="an">Bootstrap anchor — buy once, keep forever</span><br>';
+  if(n.gap)h+='<span class="gn">Needs order — gap component(s)</span><br>';
+  h+='<h3>'+n.label+'</h3>';
+  h+='<span class="badge">'+n.cat+' T'+n.tier+'</span><br>';
+  h+='<span class="cost">'+n.cost+'</span>';
+  h+='<p class="desc">'+n.desc+'</p>';
+  if(n.gap&&n.gapItems&&n.gapItems.length){
+    h+='<div class="sh">What to order</div><div>';
+    n.gapItems.forEach(function(g){h+='<span class="gc">'+g+'</span>';});
+    h+='</div>';
+  }
+  if(n.techs&&n.techs.length){
+    h+='<div class="sh">Key techniques</div><div>';
+    n.techs.forEach(function(t){h+='<span class="tc">'+t+'</span>';});
+    h+='</div>';
+  }
+  var pres=(n.pre||[]).map(function(p){return NM[p];}).filter(Boolean);
+  if(pres.length){
+    h+='<div class="sh">Prerequisites</div><div>';
+    pres.forEach(function(p){h+='<span class="pc" onclick="openN(\''+p.id+'\')">'+p.label+'</span>';});
+    h+='</div>';
+  }
+  var unlocks=nodes.filter(function(nd){return(nd.pre||[]).includes(id);});
+  if(unlocks.length){
+    h+='<div class="sh">Unlocks</div><div>';
+    unlocks.forEach(function(u){h+='<span class="pc" onclick="openN(\''+u.id+'\')">'+u.label+'</span>';});
+    h+='</div>';
+  }
+  if(n.cmp&&n.cmp.length){
+    h+='<div class="sh">Market comparison</div>';
+    n.cmp.forEach(function(c){h+='<div class="cm">'+c+'</div>';});
+  }
+  var isDone=completed.has(id);
+  h+='<button class="complete-btn'+(isDone?' done':'')+'" onclick="toggleComplete(\''+id+'\')">'+(isDone?'✓ COMPLETED':'MARK COMPLETE')+'</button>';
+  document.getElementById('pc').innerHTML=h;
+  document.getElementById('panel').classList.add('open');
+  render();
+}
+
+function render(){
+  var svg=document.getElementById('tree');
+  var maxT=Math.max.apply(null,nodes.map(function(n){return n.tier;}));
+  var H=TOP+maxT*TH+NH+60;
+  var W=1240;
+  svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  svg.setAttribute('height',H);
+
+  var visFilter = aF==='all' ? nodes : nodes.filter(function(n){
+    return n.cat===aF || n.cat==='anchor' || (aF==='scope'&&n.cat==='pi3');
+  });
+  var vids=new Set(visFilter.map(function(n){return n.id;}));
+
+  var o='<defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>';
+
+  // Column headers
+  var colDefs=[
+    {cat:'scope',label:'Oscilloscope'},
+    {cat:'wfgen',label:'Waveform Gen'},
+    {cat:'mm',label:'Multimeter'},
+    {cat:'psu',label:'Power Supply'},
+    {cat:'synth',label:'Synth Modules'},
+    {cat:'pi3',label:'Pi/FFT'},
+    {cat:'lcr',label:'LCR Meter'},
+    {cat:'fcnt',label:'Freq Counter'},
+  ];
+  colDefs.forEach(function(cd){
+    if(aF!=='all'&&aF!==cd.cat&&!(aF==='scope'&&cd.cat==='pi3'))return;
+    var cc=CC[cd.cat];
+    o+='<text x="'+(CX[cd.cat]+NW/2)+'" y="18" text-anchor="middle" font-size="9.5" font-weight="600" fill="'+cc.s+'" font-family="IBM Plex Mono,monospace" letter-spacing="0.06em">'+cd.label.toUpperCase()+'</text>';
+  });
+
+  // Tier labels
+  var tiers=[...new Set(nodes.filter(function(n){return n.cat!=='anchor';}).map(function(n){return n.tier;}))].sort(function(a,b){return a-b;});
+  tiers.forEach(function(t){
+    o+='<text x="6" y="'+(ny(t)+NH/2+4)+'" font-size="7.5" fill="#ccc" font-family="IBM Plex Mono,monospace">T'+t+'</text>';
+  });
+
+  // Same-column edges
+  nodes.forEach(function(n){
+    if(!vids.has(n.id))return;
+    (n.pre||[]).forEach(function(pid){
+      var pn=NM[pid];
+      if(!pn||!vids.has(pid)||pn.cat!==n.cat)return;
+      var pp=npos(pid),np=npos(n.id);
+      var cc=CC[n.cat]||CC.scope;
+      o+='<line x1="'+(pp.x+NW/2)+'" y1="'+(pp.y+NH)+'" x2="'+(np.x+NW/2)+'" y2="'+np.y+'" stroke="'+cc.s+'" stroke-width="1" opacity=".25" marker-end="url(#ar)"/>';
+    });
+  });
+
+  // Cross-column edges
+  if(aF==='all'||aF==='scope'){
+    crossEdges.forEach(function(e){
+      if(!vids.has(e.f)||!vids.has(e.t))return;
+      var fn=NM[e.f],tn=NM[e.t];
+      if(fn.cat===tn.cat)return;
+      var fp=npos(e.f),tp=npos(e.t);
+      var x1=fp.x+(fp.x<tp.x?NW:0),y1=fp.y+NH/2;
+      var x2=tp.x+(fp.x<tp.x?0:NW),y2=tp.y+NH/2;
+      var mx=(x1+x2)/2;
+      o+='<path d="M'+x1+' '+y1+' C'+mx+' '+y1+' '+mx+' '+y2+' '+x2+' '+y2+'" fill="none" stroke="#bbb" stroke-width="0.6" stroke-dasharray="3 3" opacity=".35" marker-end="url(#ar)"/>';
+    });
+    // Anchor edges
+    nodes.forEach(function(n){
+      if(!vids.has(n.id))return;
+      (n.pre||[]).forEach(function(pid){
+        var pn=NM[pid];
+        if(!pn||!pn.anchor||!vids.has(pid))return;
+        var pp=npos(pid),np=npos(n.id);
+        var x1=pp.x+NW/2,y1=pp.y+NH,x2=np.x+NW/2,y2=np.y;
+        var mx=(x1+x2)/2,my=(y1+y2)/2;
+        o+='<path d="M'+x1+' '+y1+' C'+x1+' '+my+' '+x2+' '+my+' '+x2+' '+y2+'" fill="none" stroke="#C07800" stroke-width="1" stroke-dasharray="4 2" opacity=".45" marker-end="url(#ar)"/>';
+      });
+    });
+  }
+
+  // Nodes
+  visFilter.forEach(function(n){
+    var pos=npos(n.id);
+    var cc=n.anchor?CC.anchor:n.gap?CC.gap:(CC[n.cat]||CC.scope);
+    var isSel=sel===n.id;
+    var faded=sel&&!isSel&&!((NM[sel]&&(NM[sel].pre||[]).includes(n.id)))&&!((n.pre||[]).includes(sel));
+    o+='<g class="nd" onclick="openN(\''+n.id+'\')" style="opacity:'+(faded?0.1:1)+'">';
+    if(n.anchor){
+      o+='<rect x="'+pos.x+'" y="'+pos.y+'" width="'+NW+'" height="'+NH+'" rx="4" fill="'+cc.f+'" stroke="'+cc.s+'" stroke-width="2"/>';
+      o+='<rect x="'+(pos.x+3)+'" y="'+(pos.y+3)+'" width="'+(NW-6)+'" height="'+(NH-6)+'" rx="2" fill="none" stroke="'+cc.s+'" stroke-width="0.7" stroke-dasharray="4 2" opacity=".5"/>';
+    }else if(n.gap){
+      o+='<rect x="'+pos.x+'" y="'+pos.y+'" width="'+NW+'" height="'+NH+'" rx="4" fill="'+cc.f+'" stroke="'+cc.s+'" stroke-width="'+(isSel?2.5:1.2)+'" stroke-dasharray="5 2"/>';
+    }else{
+      o+='<rect x="'+pos.x+'" y="'+pos.y+'" width="'+NW+'" height="'+NH+'" rx="4" fill="'+cc.f+'" stroke="'+cc.s+'" stroke-width="'+(isSel?2.5:0.8)+'"/>';
+    }
+    var tx=pos.x+NW/2;
+    o+='<text x="'+tx+'" y="'+(pos.y+16)+'" text-anchor="middle" font-size="10.5" font-weight="600" fill="'+cc.t+'" font-family="IBM Plex Mono,monospace">'+n.label+'</text>';
+    o+='<text x="'+tx+'" y="'+(pos.y+29)+'" text-anchor="middle" font-size="9.5" fill="'+cc.s+'" opacity=".85" font-family="IBM Plex Sans,sans-serif">'+n.sub+'</text>';
+    o+='<text x="'+tx+'" y="'+(pos.y+43)+'" text-anchor="middle" font-size="8.5" fill="'+cc.s+'" opacity=".6" font-family="IBM Plex Mono,monospace">'+n.cost+'</text>';
+    if(completed.has(n.id)){
+      o+='<rect x="'+pos.x+'" y="'+pos.y+'" width="'+NW+'" height="'+NH+'" rx="4" fill="#0A6B4F" opacity=".08" pointer-events="none"/>';
+      o+='<text x="'+(pos.x+NW-5)+'" y="'+(pos.y+11)+'" text-anchor="end" font-size="9" font-weight="600" fill="#0A6B4F" font-family="IBM Plex Mono,monospace" pointer-events="none">✓</text>';
+    }
+    o+='</g>';
+  });
+
+  svg.innerHTML=o;
+}
+render();
+</script>
+</body>
+</html>
+
